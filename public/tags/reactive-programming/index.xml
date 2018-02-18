@@ -7,10 +7,19 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>&amp;copy; 2017 brucou</copyright>
-    <lastBuildDate>Sat, 17 Feb 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 18 Feb 2018 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="http://brucou.github.io/tags/reactive-programming/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Combine</title>
+      <link>http://brucou.github.io/projects/component-combinators/combine/</link>
+      <pubDate>Sun, 18 Feb 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/combine/</guid>
+      <description></description>
+    </item>
     
     <item>
       <title>EFSM combinator - documentation</title>

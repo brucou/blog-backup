@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>ActionDriver - Technuflexions</title>
+
+		<meta name="description" content="Motivation The action driver allows to execute a command on a resource and retrieve the response. The command is parameterized by the repository holding the resource, the resource in question, and additional parameters which specify further the command to be executed.
+A typical application is to execute a domain object&rsquo;s method or a domain service in a given bounded context. More generally, the action driver can be used to execute any command pre-defined for a given context with a set of parameters.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>ActionDriver</h1>
+	<h5> Last modified on
+		Sep 03, 2017
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			3 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>The action driver allows to execute a command on a resource and retrieve the response. The command is parameterized by the repository holding the resource, the resource in question, and additional parameters which specify further the command to be executed.</p>
+
+<p>A typical application is to execute a domain object&rsquo;s method or a domain service in a given bounded context. More generally, the action driver can be used to execute any command pre-defined for a given context with a set of parameters.</p>
+
+<h1 id="api">API</h1>
+
+<h2 id="makedomainactiondriver-repository-actionconfig-actiondriver">makeDomainActionDriver :: Repository-&gt; ActionConfig -&gt; ActionDriver</h2>
+
+<h3 id="description">Description</h3>
+
+<p>Creates a <em>request/response</em> driver from a configuration object (called <code>config</code> here) and a repository (<code>repository</code>).</p>
+
+<p>The <code>context</code> is mapped to a <code>get</code> function through the <code>config</code> object. That <code>get</code> function is executed with <code>repository</code>, <code>context</code>, and <code>payload</code> as parameters.  That <code>get</code> function must return a <code>Promise</code>.</p>
+
+<p>The driver sink receives an object which encodes the request to be executed with the following properties :</p>
+
+<ul>
+<li>context
+
+<ul>
+<li>the context within which to understand the command. The same command identifier can correspond to different functions, depending on the context.</li>
+</ul></li>
+<li>command
+
+<ul>
+<li>an identifier for the command to be executed, to be mapped with an actual function through the <code>config</code> object</li>
+</ul></li>
+<li>payload
+
+<ul>
+<li>the parameters to be passed to the command to be executed</li>
+</ul></li>
+</ul>
+
+<p>The behaviour is as follows :</p>
+
+<ul>
+<li>the driver receives an action, i.e. <code>context, command, payload</code> information</li>
+<li>the function to be executed is obtained through the <code>config</code> object as <code>config[context][command]</code></li>
+<li>that function is called with <code>(repository, context, payload)</code> as parameters</li>
+<li>if the function throws, the exception is caught and an error response is issued through the driver sink</li>
+<li>Response objects understand error as being :
+
+<ul>
+<li>exceptions occurring during execution of the command,</li>
+<li>failing promise being returned,</li>
+<li>an <code>Error</code> object being returned by the command</li>
+</ul></li>
+<li>responses objects
+
+<ul>
+<li>pass errors and result of commands in a similar fashion as node callbacks, i.e. with a separate channel for errors</li>
+<li>keep the matching request, to allow for posterior reconciliation of response and request</li>
+</ul></li>
+<li>to further facilitate the filtering out of responses, each context has a dedicated source which passes on only responses corresponding to actions in that context.
+
+<ul>
+<li><code>getResponse</code> property holds a function which returns a subject which only passes on the responses for a given context</li>
+</ul></li>
+</ul>
+
+<h3 id="types">Types</h3>
+
+<ul>
+<li><code>Repository :: *</code></li>
+<li><code>ActionConfig :: HashMap&lt;Context, HashMap&lt;Command, ActionFn&gt;&gt;</code></li>
+<li><code>ActionFn :: Repository -&gt; Context -&gt; Payload -&gt; Promise&lt;*&gt; | Error</code></li>
+<li><code>ActionDriver :: Sink&lt;ActionRequest&gt; -&gt; Source&lt;ActionResponse&gt; &amp; Record {getResponse :: Context -&gt; Subject}</code></li>
+<li><code>ActionRequest :: Record {context :: Context, command : Command, payload : Payload}</code></li>
+<li><code>Context :: String</code></li>
+<li><code>Command :: String</code></li>
+<li><code>Payload :: *</code></li>
+<li><code>ActionResponse :: Record {request :: ActionRequest, err :: Error | Null, response :: Response | Null}</code></li>
+<li><code>Response :: *</code></li>
+</ul>
+
+<h3 id="contracts">Contracts</h3>
+
+<ul>
+<li>for every context and command passed as parameters, there MUST be a matching <code>config[context][command]</code> which is a function</li>
+</ul>
+
+<h1 id="example">Example</h1>
+
+<p>cf. <code>ForEachListOf</code> demo</p>
+
+<h1 id="tips">Tips</h1>
+
+<ul>
+<li>the action driver can be used in connection with the query driver to implement live queries. An example of this is portrayed in the <code>ForEachListOf</code> demo. One fetches the current value of a resource, while listening on posterior responses from update actions on that resource.</li>
+<li>if the contextual command throws, then that error will be passed on the error channel
+of the observable. Other errors which do not lead to throwing will be passed on the same
+channel as valid results. This for instance means that an http request might fail, but as
+long as the function making the http request does not throw, the error code returned by the
+request will be passed as a response just as a successful http request would. Hence the
+caller of the <code>getResponse</code> is responsible for filtering out the response content and
+associate the corresponding logic to it.</li>
+</ul>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/querydriver/">
+            <img class="icon-text" src="/img/prev.svg"/>Query driver</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/m-component---merge-default-functions/">Default merge functions and slotted content<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#api">API</a>
+<ul>
+<li><a href="#makedomainactiondriver-repository-actionconfig-actiondriver">makeDomainActionDriver :: Repository-&gt; ActionConfig -&gt; ActionDriver</a>
+<ul>
+<li><a href="#description">Description</a></li>
+<li><a href="#types">Types</a></li>
+<li><a href="#contracts">Contracts</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

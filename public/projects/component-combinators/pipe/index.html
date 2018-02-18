@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Pipe - Technuflections</title>
+
+		<meta name="description" content="Motivation The Pipe component allows to execute a number of components sequentially, with the ouptuts (sinks) of each connected to the inputs of the next.
+This covers the case of components which do not output action sinks but intermediary sinks, destined to serve as inputs for components finalizing the sinks computation.
+ It allows to use the event-intent-action pattern, by isolating each concern in a single component, and sequentially composing them: ComposedComponent = Pipe(Event, Intent, Action), where Event acts as event factory, returns sinks which are events, Intent aggregates events into intent sinks, Action computes the actions sinks from the intents.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>Pipe</h1>
+	<h5> Last modified on
+		Jan 06, 2018
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			3 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>The <code>Pipe</code> component allows to execute a number of components sequentially, with the ouptuts (sinks)
+ of each connected to the inputs of the next.</p>
+
+<p>This covers the case of components which do not output action sinks but intermediary sinks,
+destined to serve as inputs for components finalizing the sinks computation.</p>
+
+<ul>
+<li>It allows to use the event-intent-action pattern, by isolating each concern in a single component, and
+sequentially composing them: <code>ComposedComponent = Pipe(Event, Intent, Action)</code>, where <code>Event</code>
+acts as event factory, returns sinks which are events, <code>Intent</code> aggregates events into intent
+sinks, <code>Action</code> computes the actions sinks from the intents.</li>
+<li>It also covers the case of reuse of generic components, by allowing to prefix an adapter component to match interfaces :
+<code>AdaptedComponent = Pipe(AdHocComponentA, AdapterA, ReusableComponent, AdapterB, AdHocComponentB)
+</code>. A simple case for instance is when it is needed to change the name of an output sink or
+input source to respect the interface of another component.</li>
+</ul>
+
+<p>To realize the chaining, sinks returned by a component will be passed as source to the next
+component in the sequence. In the general case, one should not allow collision between source and
+ sink, i.e. sink names should be different from source names - unintended behaviour linked to
+ this can be VERY HARD to debug. To cover for the unexpected case where the previously described behaviour would be desired, such behaviour should be parameterizable, albeit with a sound default.</p>
+
+<h1 id="api">API</h1>
+
+<h2 id="pipe-pipesettings-component-pipedcomponent">Pipe :: PipeSettings -&gt; [Component] -&gt; PipedComponent</h2>
+
+<h3 id="description">Description</h3>
+
+<p>Creates a <code>PipedComponent</code> whose behaviour is parameterized via <code>PipeSettings</code>. Its second
+argument is a non-empty list of components to be sequentially composed.</p>
+
+<p>The parametrization is as follows :</p>
+
+<ul>
+<li><code>PipeSettings :: SomeOf&lt;Overwrite&gt;</code></li>
+</ul>
+
+<p>The behaviour is as follows :</p>
+
+<ul>
+<li>if the array of component is empty, an error is thrown</li>
+<li>the first component in the sequence is executed</li>
+<li>its sinks are merged with the sources :
+
+<ul>
+<li>if there is collision between sources and sinks, and <code>settings.overwrite</code> is false, throws an
+exception</li>
+<li>otherwise, merge the sinks into the sources, with the sinks replacing the sources in case of
+collision</li>
+</ul></li>
+<li>the process is iterated with the next component in sequence, with the merged object as its
+<code>sources</code> object.</li>
+<li>at the end of iteration, the sinks for the last component are returned as sinks of the
+<code>PipedComponent</code></li>
+</ul>
+
+<h3 id="types">Types</h3>
+
+<ul>
+<li><code>PipeSettings :: Record {</code></li>
+<li><code>Pipe : { throwIfSinkSourceConflict :: Boolean}</code> <strong>Optional - default : false</strong></li>
+<li><code>}</code></li>
+<li><code>PipedComponent :: Component</code></li>
+</ul>
+
+<h3 id="contracts">Contracts</h3>
+
+<ul>
+<li>if <code>throwIfSinkSourceConflict</code> is set to true, a component cannot return a sink
+whose sink name is equal to a source name - unless it is the final component in the component sequence.</li>
+</ul>
+
+<h1 id="example">Example</h1>
+
+<p>cf. <a href="https://github.com/brucou/component-combinators/blob/master/test/Pipe.specs.js">tests</a>, and <a href="/posts/applying-componentization-to-reactive-systems---sample-application/">example application</a></p>
+
+<h1 id="tips">Tips</h1>
+
+<ul>
+<li>All components have the ability to include contracts in their definition. It is recommended to
+use those for some basic error management. A common risk in the sequential composition
+formulation is that the interface between components do not match, or match erroneously. The
+appropriate contracts can check the relevant conditions prior to executing the component (<em>fail
+fast</em>). For instance, one can :
+
+<ul>
+<li>check that the expected sources are present</li>
+<li>if necessary, also check that there are no extra sources (to use carefully, as it might be
+normal to have extra sources&hellip;)</li>
+</ul></li>
+<li>A typical mistake when using <code>Pipe</code>, in for instance <code>Pipe(a, b)</code>, where <code>a</code> produces sinks
+<code>asink1</code> and <code>asink2</code>, is to focus in <code>b</code> on <code>asink1</code> and forget to pass on <code>asink2</code> if for
+example there is no work to be done on <code>asink2</code>. Such a mistake would produce an error whose
+message would be rather hard to relate to the actual cause. So it is important to remember that
+while combinators for parallel composition merge sinks by default and pass them on <em>invisibly</em>,
+the <code>Pipe</code> sequential composition combinator requires to explicit all the sinks to be passed.</li>
+</ul>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/m-component---merge-default-functions/">
+            <img class="icon-text" src="/img/prev.svg"/>Default merge functions and slotted content</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/inslot/">InSlot<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#api">API</a>
+<ul>
+<li><a href="#pipe-pipesettings-component-pipedcomponent">Pipe :: PipeSettings -&gt; [Component] -&gt; PipedComponent</a>
+<ul>
+<li><a href="#description">Description</a></li>
+<li><a href="#types">Types</a></li>
+<li><a href="#contracts">Contracts</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

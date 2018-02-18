@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Mocking the document driver - Technuflections</title>
+
+		<meta name="description" content="Motivation In the context of our cyclejs-based architecture, to read DOM state (input field content, text field content, checkbox state, etc.) is realized by means of the document driver. That driver is simply an injection of the global browser&rsquo;s document object. For instance, to read an input field&rsquo;s value, assuming the css selector is selector, can be achieved by sources.document.querySelector(selector).value.
+To be able to test applications written within that architecture, we propose a mechanism to mock the document driver, hence avoiding the side-effects performed by such driver.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>Mocking the document driver</h1>
+	<h5> Last modified on
+		Jan 27, 2018
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			2 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>In the context of our cyclejs-based architecture, to read DOM state (input field content, text
+field content, checkbox state, etc.) is realized by means of the <code>document</code> driver. That driver
+is simply an injection of the global browser&rsquo;s <code>document</code> object. For instance, to read an input
+field&rsquo;s value, assuming the css selector is <code>selector</code>, can be achieved by <code>sources.document.querySelector(selector).value</code>.</p>
+
+<p>To be able to test applications written within that architecture, we propose a mechanism to mock
+ the document driver, hence avoiding the side-effects performed by such driver.</p>
+
+<p>In connection with the <code>runTestScenario</code> <a href="https://brucou.github.io/projects/component-combinators/runtestscenario/#mocking">mock factory syntax</a>, we propose here a syntax
+ <code>document!selector@property</code> for mocked inputs. This will match a code written as <code>sources.document.querySelector(selector)[property]</code>.</p>
+
+<h1 id="api">API</h1>
+
+<p>The <code>makeMockDocumentSource</code> function is exported to be used in conjunction with <code>runTestScenario</code>
+helper. For example :</p>
+
+<pre><code class="language-javascript">  const inputs = [
+    ...
+    {
+      [`document!value@${USER_APPLICATION_FORM_INPUT_SUPERPOWER_SELECTOR}`]: {
+        diagram: 'u----', values: {u: &quot;&quot;}
+      }
+    },
+    {
+      [`document!value@${USER_APPLICATION_FORM_INPUT_LEGAL_NAME_SELECTOR}`]: {
+        diagram: 'u----', values: {u: &quot;&quot;}
+      }
+    },
+    ...
+    ];
+
+  runTestScenario(inputs, testResults, ProcessApplication, {
+    tickDuration: 5,
+    waitForFinishDelay: 20,
+    analyzeTestResults: analyzeTestResults(assert, done),
+    mocks: {
+      DOM: makeMockDOMSource,
+      document: makeMockDocumentSource,
+      domainQuery: makeDomainQuerySource
+    },
+    sourceFactory: {
+      ...
+      [`document!value@${USER_APPLICATION_FORM_INPUT_SUPERPOWER_SELECTOR}`]: subjectFactory,
+      [`document!value@${USER_APPLICATION_FORM_INPUT_LEGAL_NAME_SELECTOR}`]: subjectFactory,
+      ...
+    },
+</code></pre>
+
+<p>Note the mocked input syntax and the passing of timed diagrams. Also, as of now,
+<code>runTestScenario</code> requires the user to specify a factory for the input streams to which the
+mocked inputs will be sent. In the case of reading state from the DOM (i.e. behaviours), this would be a <code>() =&gt; new Rx.ReplaySubject(1)</code>. However, as of now, the subject factory is irrelevant. Only <code>querySelector</code> of the
+global window <code>document</code> object is mocked, and because the <code>document</code> driver just passes on the
+<code>document</code> object, there is no need for a subject factory. A subject factory must nonetheless
+appear in the <code>sourceFactory</code> setting for contract checking purposes (for every <code>x!y</code> mocked
+input, there must be a corresponding factory in <code>sourceFactory</code>).</p>
+
+<h1 id="contracts">Contracts</h1>
+
+<ul>
+<li>In <code>document!selector@property</code>, both <code>selector</code> and <code>property</code> must be non empty.</li>
+</ul>
+
+<h1 id="example">Example</h1>
+
+<p>cf. <a href="https://github.com/brucou/component-combinators/blob/master/examples/volunteerApplication/test/app.specs.js#L159">tests</a> from an example application.</p>
+
+<h1 id="tips">Tips</h1>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/mocking-the-query-driver/">
+            <img class="icon-text" src="/img/prev.svg"/>Mocking the query driver</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/mocking-the-dom-driver/">Mocking the DOM driver<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#api">API</a></li>
+<li><a href="#contracts">Contracts</a></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

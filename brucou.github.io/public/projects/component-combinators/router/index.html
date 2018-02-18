@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Router - Technuflexions</title>
+
+		<meta name="description" content="Motivation The Router component allows to associate a set of URL locations (routes) from a source (called location source) to a component or set of components. When the location source emits a route, the component(s) associated to that route should be activated and be parameterized by the information encoded in the route.
+Routing involves a sophisticated form of control flow, and relates strongly to the Switch component. However, there are specifics to the routing logic, due to the fact that routing in web applications is principally aimed at representing efficiently, concisely, and visually a specific state of the application :">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>Router</h1>
+	<h5> Last modified on
+		Sep 13, 2017
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			6 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>The <code>Router</code> component allows to associate a set of URL locations (routes) from a source (called location source) to a component or set of components. When the location source emits a route, the component(s) associated to that route should be activated and be parameterized by the information encoded in the route.</p>
+
+<p>Routing involves a sophisticated form of control flow, and relates strongly to the <code>Switch</code> component. However, there are specifics to the routing logic, due to the fact that routing in web applications is principally aimed at representing efficiently, concisely, and visually a specific state of the application :</p>
+
+<ul>
+<li>routing may be nested : a parent-child relationship at component level may be encoded with a parent-child relationship at route level
+
+<ul>
+<li>the standard mapping is a relationship between sections of the url. For instance <code>URL : 'x/y/z'</code> mapped to <code>Components : A1(x,y) -- B1(z)</code></li>
+</ul></li>
+<li>If a location source emits twice in sequence the same location, then there should be no update in the application state (i.e. no components activated, or deactivated, or updated)</li>
+<li>If a location source emits twice in sequence the same already mapped segment of url, then the associated component should not be updated.
+
+<ul>
+<li>In the previous case, this means <code>URL : 'x/y/a'</code> should not lead to any change in the state of component <code>A1</code> while it might lead to the component <code>B1(z)</code> being replaced by the component <code>B2(a)</code></li>
+<li>visual representation of state is achieved by incorporating in route sections meaningful words from the application domain (<code>URL : show/items?all</code>)</li>
+<li>A route may also encode parameter passing in its sections (<code>URL : add/book?author=John&amp;title=Ahoj</code>) in a standard way to facilitate parsing by the matching component.</li>
+</ul></li>
+</ul>
+
+<p>As one can see, routing, at a simplified level, can be modelized as a two-concerns entity :</p>
+
+<ol>
+<li>a mapping between a URL (representing the application state) and a tree of components (which compose the application in the given state). In the case of nested routing, we have <em>in fine</em> a mapping between a tree of URL sections and a tree of components.  This is generally referred to as <em>deep linking</em>.</li>
+<li>a procedure to match updates of that URL to updates of the component tree as efficiently as possible.</li>
+</ol>
+
+<p>Some applications add extra control-flow requirement to routing by adding another concern :</p>
+
+<ul>
+<li>accepting/rejecting transition from one route (application state) to another route</li>
+</ul>
+
+<p>The current routing component targets concerns 1 and 2, while leaving the third concern to the rest of the application. While a hierarchical state machine in principle addresses nicely all three concerns (at least for a low number of control states), we went for a simpler implementation in this first draft, which should fully address the most common nested routing cases.</p>
+
+<h1 id="api">API</h1>
+
+<h2 id="onroute-routesettings-component-routecomponent">OnRoute :: RouteSettings -&gt; [Component] -&gt; RouteComponent</h2>
+
+<h3 id="description">Description</h3>
+
+<p>Creates a router component whose behaviour is parameterized via <code>RouteSettings</code>. Children components are the components to be mapped to the incoming route specified in settings.</p>
+
+<p>The parametrization is as follows :</p>
+
+<ul>
+<li>an array of sink names must be passed to indicate which sinks are to be extracted from the children components. Sinks produced by any child component which are not in the sink names array will be ignored. It is not necessary, for any sink name in that array, for a child component to return a sink of that name.</li>
+<li>the source from which the urls are emitted may be specified with <code>routeSource</code> setting property, in which case urls will be read from <code>sources[routeSource]</code>. <code>'route$'</code> is the default value for <code>routeSource</code></li>
+<li>the route matching/parameter parsing is specified by a <a href="https://github.com/cowboy/javascript-route-matcher">syntax</a> akin to a regular expression (termed instead a dynamic expression) :
+<code>javascript
+var search = routeMatcher(&quot;search/:query/p:page&quot;);
+search.parse(&quot;search/gonna-fail&quot;) // null (no match)
+search.parse(&quot;search/cowboy/p5&quot;)  // {query: &quot;cowboy&quot;, page: &quot;5&quot;}
+search.parse(&quot;search/gnarf/p10&quot;)  // {query: &quot;gnarf&quot;, page: &quot;10&quot;}
+</code></li>
+</ul>
+
+<p>The behaviour is as follows :</p>
+
+<ul>
+<li>for every incoming value of the location source, the incoming route is matched against the configured route</li>
+<li>if there is a match, and that match is the same as the previous match, nothing happens, the component(s) was/were already activated previously</li>
+<li>if there is a non-redundant positive match on the configured route, then
+
+<ul>
+<li>the associated components are executed with
+
+<ul>
+<li>a location source which is updated to remove the matched path from the current location source
+
+<ul>
+<li>this is the key mechanism allowing nested routing</li>
+</ul></li>
+<li>a <code>matched</code> property in settings which contain the partial route matching (for instance <code>/section/:capture</code> will lead to <code>{matched: capture: '...'}</code>)</li>
+</ul></li>
+<li>the sinks returned by the associated components are activated (merged into the rest of the application sinks)
+
+<ul>
+<li>those sinks whose name is not in the <code>sinkNames</code> property are discarded</li>
+<li>those sinks whose name is in the <code>sinkNames</code> property are merged according to settings (default-merged if not)</li>
+</ul></li>
+</ul></li>
+<li>if there is not a positive match on the configured route, then
+
+<ul>
+<li><code>null</code> is emitted on <code>DOM</code> sinks. This is so under the hypothesis that router&rsquo;s parent DOM sink will merge its children sinks with <code>combineLatest</code>, so we need all DOM sinks to have an initial value to avoid blocking the <code>combineLatest</code> operation. We also need to pass on the fact that the DOM is actually empty on that route<sup class="footnote-ref" id="fnref:1"><a rel="footnote" href="#fn:1">1</a></sup>, so that previously displayed DOMs are actually erased on route changes. Concretely there are two common cases :
+
+<ul>
+<li>transition [MATCH, INIT] TO NO_MATCH -&gt; EMITS NULL</li>
+<li>transition [MATCH, NO_MATCH] -&gt; MATCH -&gt; ALWAYS STARTS WITH NULL</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<p>One can refer to the tests to see this in action.</p>
+
+<h3 id="types">Types</h3>
+
+<ul>
+<li><code>RouteComponent :: Component</code></li>
+<li><code>RouteSettings :: Record {</code></li>
+<li><code>sinkNames :: [String]</code>  <strong>Mandatory</strong></li>
+<li><code>route :: RouteSpec</code> <strong>Mandatory</strong></li>
+<li><code>routeSource :: String</code> <strong>Mandatory</strong></li>
+<li><code>}</code></li>
+<li><code>RouteSpec :: String</code> <a href="https://github.com/cowboy/javascript-route-matcher">syntax</a></li>
+</ul>
+
+<h3 id="contracts">Contracts</h3>
+
+<ul>
+<li>be careful about end slashing</li>
+<li><code>route :: RouteSpec</code> should not end by a <code>/</code> or start with a <code>/</code> (<strong>NOTE</strong> : for now! this is due to how <code>routeRemainder</code> is parsed and passed to children&hellip;)</li>
+<li>if <code>routeSource</code> is specified, then <code>sources[routeSource]</code> must be defined (and be an observable)</li>
+</ul>
+
+<h1 id="example">Example</h1>
+
+<h1 id="roadmap">Roadmap</h1>
+
+<ul>
+<li>route parsing
+
+<ul>
+<li>have the parsing library as a configurable dependency</li>
+<li>switch to more recent and functional <a href="https://github.com/rcs/route-parser">https://github.com/rcs/route-parser</a></li>
+</ul></li>
+</ul>
+
+<h1 id="tips">Tips</h1>
+
+<ul>
+<li>The null emission mechanism is explained here for reference, and for analyzing output when testing. In a real application, the only impact this should have is that the DOM sink can receive null inputs, and as such must guards against them (filtering them out for instance)</li>
+<li>The current parsing library does not parse query strings but passes all the query string to the component. One can then use a specific query string parsing library.  This ensures maximal flexibility for the router component library as any extra parsing library can be plugged in according to the shape of the route.</li>
+<li>when the route changes to a route for which there is no matching component, the displayed DOM does not change. If there is a need for a different treatment in such cases, that should be implemented, by adding a component with a wildcard matching any children route of relevance.</li>
+</ul>
+<div class="footnotes">
+
+<hr />
+
+<ol>
+<li id="fn:1">The core reason is that DOM sink correspond to a behaviour, and hence should always have a value. That not being enforced by cyclejs framework forces us to adjust manually.
+ <a class="footnote-return" href="#fnref:1"><sup>[return]</sup></a></li>
+</ol>
+</div>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/switch/">
+            <img class="icon-text" src="/img/prev.svg"/>Switch</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/foreach/">ForEach<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#api">API</a>
+<ul>
+<li><a href="#onroute-routesettings-component-routecomponent">OnRoute :: RouteSettings -&gt; [Component] -&gt; RouteComponent</a>
+<ul>
+<li><a href="#description">Description</a></li>
+<li><a href="#types">Types</a></li>
+<li><a href="#contracts">Contracts</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#roadmap">Roadmap</a></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

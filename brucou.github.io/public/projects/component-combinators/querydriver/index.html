@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Query driver - Technuflexions</title>
+
+		<meta name="description" content="Motivation The query driver allows to query a resource for a subset of the values that it references. The query is parameterized by the repository holding the resource, the resource in question, and additional parameters which specify the subset of values from that resource that the query is addressing.
+A typical application is to query a domain object in a bounded context for its current value. More generally, the query driver can be used to execute any command within a list of configured commands for a given configured context.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>Query driver</h1>
+	<h5> Last modified on
+		Sep 03, 2017
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			3 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>The query driver allows to query a resource for a subset of the values that it references. The query is parameterized by the repository holding the resource, the resource in question, and additional parameters which specify the subset of values from that resource that the query is addressing.</p>
+
+<p>A typical application is to query a domain object in a bounded context for its current value. More generally, the query driver can be used to execute any command within a list of configured commands for a given configured context.</p>
+
+<h1 id="api">API</h1>
+
+<h2 id="makedomainquerydriver-repository-queryconfig-querydriver">makeDomainQueryDriver :: Repository-&gt; QueryConfig -&gt; QueryDriver</h2>
+
+<h3 id="description">Description</h3>
+
+<p>Creates a <strong>read-only</strong> driver from a configuration object (called <code>config</code> here) and a repository (<code>repository</code>). The created driver holds a <code>getCurrent</code> property which is a function who takes two parameters : <code>context</code> and <code>payload</code>.</p>
+
+<p>The <code>context</code> is mapped to a <code>get</code> function through the <code>config</code> object. That <code>get</code> function is executed with <code>repository</code>, <code>context</code>, and <code>payload</code> as parameters.  That <code>get</code> function must return a <code>Promise</code>.</p>
+
+<p>To say the same things differently, the query driver allows to execute a <code>get</code> function with a given payload, that <code>get</code> function being parameterized by the <code>context</code> argument, as specified in the <code>config</code> object.</p>
+
+<p>The behaviour is as follows :</p>
+
+<ul>
+<li>the <code>getCurrent</code> function matches its <code>context</code> parameter to a <code>get</code> function is <code>config[context]</code></li>
+<li>that function is executed with <code>(repository, context, payload)</code>
+
+<ul>
+<li>If the function throws, then the error is passed on through as a rejected promise</li>
+<li>If the function does no throw, it returns a promise, which may be eventually fulfilled or rejected</li>
+</ul></li>
+<li>the returned promise is wrapped and passed on as a observable</li>
+</ul>
+
+<p>It results from the error processing behaviour of <code>getCurrent</code> that the caller must do its own error processing and discriminate between an exception raised by the call (say <q>division by zero</q>), or an error code returned by the attempt to access the resource in the repository (say <q>you are offline</q>, or <q>no user exists for this email</q>).</p>
+
+<h3 id="types">Types</h3>
+
+<ul>
+<li><code>Repository :: *</code> &ndash; typically would have a <code>get</code> function though</li>
+<li><code>QueryConfig :: HashMap&lt;Context, Record {get : GetFn}&gt;</code></li>
+<li><code>GetFn :: Repository -&gt; Context -&gt; Payload -&gt; Promise&lt;*&gt;</code></li>
+<li><code>QueryDriver :: Sink -&gt; Record {getCurrent : QueryFn}</code></li>
+<li><code>QueryFn :: Context -&gt; Payload -&gt; Promise&lt;*&gt;</code></li>
+<li><code>Payload :: *</code></li>
+</ul>
+
+<h3 id="contracts">Contracts</h3>
+
+<ul>
+<li>for every context passed as parameter to the <code>getCurrent</code> driver function, there MUST be a matching <code>config[context]</code> with a <code>get</code> property</li>
+</ul>
+
+<h1 id="example">Example</h1>
+
+<p><strong>TODO TESTS, update ForEachList to reflect get -&gt; getCurrent, that will be the demo</strong></p>
+
+<h1 id="tips">Tips</h1>
+
+<ul>
+<li>It is important to determine whether the queried value corresponds to a behaviour (that should be the case more often than not, so use <code>shareReplay(1)</code> or any relevant memoization mechanism) or an event. In any case, only one value is ever returned by calling that function, i.e. the driver does not emulate a live query. To emulate a live query, the query driver must be paired with the action driver</li>
+</ul>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/injectsourcesandsettings/">
+            <img class="icon-text" src="/img/prev.svg"/>InjectSourcesAndSettings</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/actiondriver/">ActionDriver<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#api">API</a>
+<ul>
+<li><a href="#makedomainquerydriver-repository-queryconfig-querydriver">makeDomainQueryDriver :: Repository-&gt; QueryConfig -&gt; QueryDriver</a>
+<ul>
+<li><a href="#description">Description</a></li>
+<li><a href="#types">Types</a></li>
+<li><a href="#contracts">Contracts</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

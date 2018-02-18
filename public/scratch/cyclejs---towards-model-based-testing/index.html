@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title> - Technuflections</title>
+
+		<meta name="description" content="Testing process Reviewing runTestScenario  In fact we don&rsquo;t really want time diagrams We do want predictability of order of inputs so we will send each input one after one, separating data from event symbol  Example:
+const testSpace = { scenario1 : { caseA : { events : &#39;iccsctttscscS&#39;, eventData : [ iData, cData, cData, sData, cData, tData, ... ] } } } const eventSymbols = { i : eventSimulatorI, c : eventSimulatorC, .">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+	<header><hgroup id="brand">
+	<h1></h1>
+	<h5>
+		<time datetime="0001-01-01 00:00:00 &#43;0000 UTC">Jan 01, 0001</time>
+		1 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+	
+
+<h1 id="testing-process">Testing process</h1>
+
+<h2 id="reviewing-runtestscenario">Reviewing <code>runTestScenario</code></h2>
+
+<ul>
+<li>In fact we don&rsquo;t really want time diagrams</li>
+<li>We do want predictability of order of inputs</li>
+<li>so we will send each input one after one, separating data from event symbol</li>
+</ul>
+
+<p>Example:</p>
+
+<pre><code class="language-javascript">const testSpace = {
+  scenario1 : {
+    caseA : {
+      events : 'iccsctttscscS',
+      eventData : [
+        iData, cData, cData, sData, cData, tData, ...
+      ]
+    }
+  }
+}
+
+const eventSymbols = {
+  i : eventSimulatorI,
+  c : eventSimulatorC,
+  ...
+}
+
+const testData = testSpace.caseA;
+
+const expected = {
+  sinkA : [...],
+  sinkB : [...]
+};
+
+runTestScenario(testData, eventSymbols, functionUnderTest)
+  .then(analyzeResults)
+  .catch(notifyErrors)
+</code></pre>
+
+<ul>
+<li>this should allow to reuse <code>eventSymbols</code> between tests</li>
+<li><code>testSpace</code> keeps scenario and cases together (cohesion)</li>
+<li>promise-based return from <code>runTestScenario</code> allow for running tests in parallel</li>
+</ul>
+
+<p>TODO :</p>
+
+<ul>
+<li>see how to write <code>eventSimulatorI</code> to allow for <a href="https://brucou.github.io/posts/user-interfaces-as-reactive-systems/#visualization">examples like in doc</a></li>
+<li>or examples like before with <code>DOM!event@selector</code>, and <code>doc!property@selector</code></li>
+</ul>
+
+<h2 id="model-based-testing">model-based testing</h2>
+
+<p>TODO :</p>
+
+<ul>
+<li>explain what it is</li>
+<li>API to design
+
+<ul>
+<li>essentially a search problem, as model is defined as a tree</li>
+</ul></li>
+</ul>
+
+	<nav>
+	
+		<a class="prev-post" href="http://brucou.github.io/scratch/cyclejs----tree-visualization/">
+			<img class="icon-text" src="/img/prev.svg"/></a>
+	
+	
+		<a class="next-post" href="http://brucou.github.io/scratch/testing_strategies/">Testing strategy<img class="icon-text" src="/img/next.svg"/>
+		</a>
+	
+	</nav>
+</article>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+

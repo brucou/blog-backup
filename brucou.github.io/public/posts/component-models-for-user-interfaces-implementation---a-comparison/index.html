@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Component models for user interfaces implementation - a comparison - Technuflexions</title>
+
+		<meta name="description" content="Abstract In the previous articles, we have presented our proposed component model for user interfaces implementation, which relies on a cyclejs architecture, and is based on streams and reactive programming techniques.
+We will now compare our proposed component model to Angular2 and React component models. We will not compare it to cyclejs component model as it does not have a proper one : while it is possible to breakdown a component into smaller components, there is no generic or structured mechanism to glue them together - it has to be done manually each time.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>Component models for user interfaces implementation - a comparison</h1>
+	<h5>
+		<time datetime="2018-01-07 00:00:00 &#43;0000 UTC">Jan 07, 2018</time>
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/components">components</a>
+			23 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+    
+
+<h1 id="abstract">Abstract</h1>
+
+<p>In the previous articles, we have presented our proposed component model for user interfaces
+ implementation, which relies on a cyclejs architecture, and is based on streams and reactive
+ programming techniques.</p>
+
+<p>We will now compare our proposed component model to <code>Angular2</code> and <code>React</code> component models. We will
+  not compare it to <code>cyclejs</code> component model as it does not have a proper one : while it is
+  possible to breakdown a component into smaller components, there is no generic or structured
+  mechanism to glue them together - it has to be done manually each time. In addition
+  standard <code>cyclejs</code> conflates the interfaces with the external systems (<code>sources</code>) with the
+  parameterization of components (for instance adding miscellaneous <code>prop$</code> source). It is
+  precisely for that reason that we have come to propose our componentization model.</p>
+
+<h1 id="angular2-component-model">Angular2 component model</h1>
+
+<h2 id="description">Description</h2>
+
+<p>A component controls a patch of screen called a view. You define a component&rsquo;s application logic—what it does to support the view—inside a class.  You define a component&rsquo;s view with its companion template. A template is a form of HTML that tells Angular how to render the component. A template looks like regular HTML, except for a few differences. The class interacts with the view through an API of properties and methods.  To tell Angular that a class is a component, you must attach metadata to the class. In TypeScript, you attach metadata by using a decorator.</p>
+
+<p>An Angular2 template, in addition to HTML syntax, includes, among other things, the following
+features:</p>
+
+<ul>
+<li><a href="https://angular.io/guide/template-syntax#binding-syntax-an-overview">data binding</a> — includes
+(property|attribute|class|style) binding, event binding, and two-way binding</li>
+<li><a href="https://angular.io/guide/template-syntax#template-expressions">template expressions</a> — expressions evaluated in the <a href="https://angular.io/guide/template-syntax#expression-context">component instance&rsquo;s context</a>, which produce a value that is assigned to a binding target. Template expressions are written in a language that looks like JavaScript.</li>
+<li><a href="https://angular.io/guide/template-syntax#template-statements">template statements</a> — evaluated in the <a href="https://angular.io/guide/template-syntax#statement-context">component instance&rsquo;s context</a>, responds to an event raised by a binding target such as an element, component, or directive.</li>
+<li>Structural directives (<code>ngFor</code>, <code>ngIf</code>, <code>ngSwitch</code>, etc.) — change the DOM layout by adding and
+removing DOM elements</li>
+<li>Attribute directives — change the appearance or behavior of an element, component, or another
+directive (<code>ngStyle</code>, etc.)</li>
+</ul>
+
+<p>The key methods/decorators for a component&rsquo;s class are the following :</p>
+
+<ul>
+<li>inputs admitted by the component</li>
+<li>output produced by the component</li>
+<li>lifecycle methods : <code>constructor</code>, <code>ngOnDestroy</code>, <code>ngOnInit</code></li>
+<li>event handlers</li>
+</ul>
+
+<p>The key metadata to attach to make a class into a component are :</p>
+
+<ul>
+<li>the selector which will hold the view</li>
+<li>the template which specifies the view</li>
+<li>the providers which are services (read : functions tackling the concerns not related to displaying the view). Services can be injected</li>
+<li>component directives, which includes other components the declared component will require</li>
+</ul>
+
+<p>Better than words, here are some sample code from the Angular2 implementation of the project
+management <a href="https://github.com/PacktPublishing/Mastering-Angular-2-Components">sample application</a> we dealt with in a <a href="/posts/applying-componentization-to-reactive-systems---sample-application/">previous article</a>.</p>
+
+<p><strong>Example of component&rsquo;s class</strong></p>
+
+<pre><code class="language-javascript">export class App {
+  // We use the data provider to obtain a data change observer
+  constructor(@Inject(ProjectService) projectService) {
+    this.projectService = projectService;
+    this.projects = [];
+
+    // Setting up our functional reactive subscription to receive project changes from the database
+    this.projectsSubscription = projectService.change
+      // We subscribe to the change observer of our service and deal with project changes in the function parameter
+      .subscribe((projects) =&gt; {
+        this.projects = projects;
+        // We create new navigation items for our projects
+        this.projectNavigationItems = this.projects
+          .filter((project) =&gt; !project.deleted)
+          .map((project) =&gt; {
+            return {
+              title: project.title,
+              link: ['/projects', project._id]
+            };
+          });
+        // Uses functional reduce to get a count over open tasks across all projects
+        this.openTasksCount = this.projects
+          .reduce((count, project) =&gt; count + project.tasks.filter((task) =&gt; !task.done).length, 0);
+      });
+  }
+
+  // If this component gets destroyed, we need to remember to clean up the project subscription
+  ngOnDestroy() {
+    this.projectsSubscription.unsubscribe();
+  }
+}
+</code></pre>
+
+<p><strong>Example of component declaration</strong></p>
+
+<pre><code class="language-javascript">@Component({
+  selector: 'ngc-app',
+  template,
+  directives: [Project, Navigation, NavigationSection, NavigationItem, ROUTER_DIRECTIVES],
+  providers: [ProjectService, UserService, ActivityService, TagsService]
+})
+</code></pre>
+
+<p>The interaction between the view defined in the template, and the class is performed through an
+extensive and complex API, which includes among other things binding inputs, outputs,
+and events.</p>
+
+<p><strong>Example of template with bindings</strong></p>
+
+<pre><code class="language-html">&lt;div class=&quot;app&quot;&gt;
+&lt;div class=&quot;app__l-side&quot;&gt;
+  &lt;ngc-navigation [openTasksCount]=&quot;openTaskCount&quot;&gt;
+    &lt;ngc-navigation-section title=&quot;Main&quot;&gt;
+      &lt;ngc-navigation-item title=&quot;Dashboard&quot; [link]=&quot;['/dashboard']&quot;&gt;&lt;/ngc-navigation-item&gt;
+    &lt;/ngc-navigation-section&gt;
+    &lt;ngc-navigation-section title=&quot;Projects&quot;
+                            [items]=&quot;projectNavigationItems&quot;&gt;
+    &lt;/ngc-navigation-section&gt;
+    &lt;ngc-navigation-section title=&quot;Admin&quot;&gt;
+      &lt;ngc-navigation-item title=&quot;Manage Plugins&quot; [link]=&quot;['/plugins']&quot;&gt;&lt;/ngc-navigation-item&gt;
+    &lt;/ngc-navigation-section&gt;
+  &lt;/ngc-navigation&gt;
+&lt;/div&gt;
+&lt;div class=&quot;app__l-main&quot;&gt;
+  &lt;router-outlet&gt;&lt;/router-outlet&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+
+<p>Note how the template binds together the view, the class and the component, into a cohesive whole,
+and relate to each other&rsquo;s entities :</p>
+
+<ul>
+<li>standard HTML elements describe the view (<code>div</code>, etc.)</li>
+<li><code>ngc-navigation</code> relates to the <code>Navigation</code> component, passed as a directive to the <code>App</code>
+component</li>
+<li><code>openTasksCount</code> from the <code>App</code> class is passed as <em>live</em> input to <code>ngc-navigation</code> (data binding with the <code>[]</code> syntax). This means that whenever <code>openTasksCount</code> will change, the <code>ngc-navigation</code> will adjust to that new value. This is by the way a typical case of parent-child communication via inputs</li>
+</ul>
+
+<p>The corresponding extract of the code for the <code>Navigation</code> component should illustrate the use of
+ the <code>@Input</code> decorator to bind the parameters passed in the template to properties of the
+ corresponding class :</p>
+
+<pre><code class="language-javascript">@Component({
+  selector: 'ngc-navigation',
+  template,
+  directives: [NavigationSection, UserArea]
+})
+export class Navigation {
+  @Input() openTasksCount;
+}
+</code></pre>
+
+<p>Because of the coupling between template, class and component, none of those entities can be, a priori, reasoned about individually. As a result, in all what follows when we will refer to a component, unless otherwise specified, we will mean the triple (template, class, @component).</p>
+
+<p>The ease of reasoning, or understanding, i.e. the readability of an Angular2 application will largely be a function of the component breakdown adopted, and the complexity of the interaction between components, and the complexity of the component definition itself.</p>
+
+<h2 id="application-architecture">Application architecture</h2>
+
+<p>The primary responsibility of a Angular2 component is to display a view described by a template.</p>
+
+<p>Templates bind events to event handler, which are located in the component&rsquo;s class. Change
+propagation and state management is performed by binding between template syntactic elements and
+the class properties. As such a class has three key responsibilities : state management, event
+handling, and lifecycle management.</p>
+
+<p>The component declaration concerns itself with linking the component to the Angular2 framework,
+so it can be handled and integrated with the rest of the components.</p>
+
+<p>While being highly prescriptive about syntax (and there is a lot of new syntax), the Angular2
+component architecture is relatively flexible in terms of the paradigms that it supports. In its
+simplest expression, events are associated to action handlers, which directly modify local
+component state, which in turn updates the view. It is however possible to follow functional reactive programming principles to <a href="https://vsavkin.com/managing-state-in-angular-2-applications-caf78d123d02">some extent</a>, to <a href="https://github.com/ngrx/platform">a larger extent</a> or simply adopt a redux-like <a href="https://blog.angular-university.io/angular-2-application-architecture-building-applications-using-rxjs-and-functional-reactive-programming-vs-redux/">one-way data flow</a>.</p>
+
+<h2 id="component-interaction">Component interaction</h2>
+
+<p>The <a href="https://angular.io/guide/component-interaction">Angular2 documentation</a> lists 4
+communication methods between components :</p>
+
+<ul>
+<li><a href="https://angular.io/guide/component-interaction#pass-data-from-parent-to-child-with-input-binding">Pass data from parent to child with input binding</a></li>
+<li><a href="https://angular.io/guide/component-interaction#parent-listens-for-child-event">Parent listens for child event</a>
+
+<ul>
+<li>the implicit pub/sub mechanism associated (linked to the <code>@Output</code> decorator) can also be
+used to communication between components in different hierarchies, i.e components which are not
+in a ancestor/child relationship</li>
+</ul></li>
+<li><a href="https://angular.io/guide/component-interaction#parent-and-children-communicate-via-a-service">Parent and children communicate via a service</a>
+
+<ul>
+<li>this is equivalent to communication by shared state, except that the service forms a facade
+which handles the state update logic</li>
+</ul></li>
+<li>Parent owns an instrumentable reference to its child
+
+<ul>
+<li><a href="https://angular.io/guide/component-interaction#parent-interacts-with-child-via-local-variable">interacts with child via local variable</a>
+
+<ul>
+<li>a reference variable is created at the child level</li>
+</ul></li>
+<li><a href="https://angular.io/guide/component-interaction#parent-calls-an-viewchild">Parent calls an <code>@ViewChild</code></a>
+
+<ul>
+<li>this allows the parent to own a reference of its children and directly instrument the
+children, for instance to modify its state</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<h2 id="routing">Routing</h2>
+
+<p>The Angular Router enables navigation from one view to the next as users perform application tasks. The router configuration has its own dedicated syntax (directives, decorators, etc.) and <a href="https://angular.io/guide/router#a-crisis-center-with-child-routes">recommended pattern</a>. Learning to use routing hence requires learning new syntax and building a specific mental model. This leads to a fair amount of syntax to understand but also to produce, and a significant lead time to getting up-to-speed. On the bright side, the router comes already packaged with most of the features one will ever need in a web application.</p>
+
+<h2 id="lifecycle">Lifecycle</h2>
+
+<p>Angular creates, updates, and destroys components automatically as the user moves through the application. The app&rsquo;s programmer can take action at each moment in this lifecycle through optional lifecycle hooks, like <code>ngOnInit</code>.</p>
+
+<h2 id="testing">Testing</h2>
+
+<p>Isolated unit tests examine an instance of a class all by itself without any dependence on Angular or any injected values. The tester creates a test instance of the class with new, supplying test doubles for the constructor parameters as needed, and then probes the test instance API surface.</p>
+
+<p>Isolated unit tests should be written for pipes and services.</p>
+
+<p>Components may be tested in isolation as well. However, isolated unit tests don&rsquo;t reveal how components interact with Angular. In particular, they can&rsquo;t reveal how a component class interacts with its own template or with other components.</p>
+
+<p>Such tests require the Angular testing utilities. The Angular testing utilities include the <code>TestBed</code> class and several helper functions from <code>@angular/core/testing</code>. Writing Angular2 tests again requires learning (and producing) a great deal of new syntax and constructing yet another mental model.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Angular2 as a framework has a very large scope, and covers the large majority of the needs of
+ the web application programmer. However, this plethora of features comes with the cost of
+ a large incidental complexity. <strong>There are many parts</strong> (angular2 framework architecture,
+ component model, routing, templating, change detection, etc.), <strong>every part is complex</strong> on its
+ own, and then that complexity is <strong>compound by the inter-relation</strong> or dependencies between the parts. That complexity means a significant time is required to construct the required mental models to understand and produce Angular2 code. That complexity also multiplies the possibility of errors in the system&rsquo;s implementation and may significantly increase debugging time. All those factors negatively impact productivity.</p>
+
+<p>A good example of complexity generated by inter-related parts is the templating mechanism, <strong>a
+double-edged sword.</strong> On the one hand, it makes the view contents more readable, specially to people with little coding experience (designers, etc.). On the other hand, the templating language precisely excels at expressing the view content, not at expressing logic and control-flow (loops, branching, etc.). The resulting DSL has a peculiar syntax, is not
+ Turing-complete, which forces to complement it with a general purpose language. That makes two languages to master, the peculiarities of the interface between the two to understand, two tightly coupled files (<code>.html</code> for the view and <code>.ts</code> for the logic) themselves coupled to the router, with what can be significant back-and-forth between the two to fully grasp the view&rsquo;s behaviour. This impacts negatively both readability and productivity.</p>
+
+<p>Another source of complexity is the inter-relation between components. For one thing, parent component can directly access and
+instrument their children, which can make it a nightmare to reason about state in a complex
+application. Then, depending on the state management strategy adopted, reconstructing the flow of data can be challenging in large component trees. Every component may have its own state, its own bindings and eventing to
+parent component or any level in the component tree. They can also communicate with the parent via a service (i.e. shared state at the closest common ancestor level). State is then scattered among the application in
+miscellaneous places, in miscellaneous programming artefacts, with both hidden and explicited
+dependencies between pieces of state to be aware of, and it may be a arduous process to link all the pieces together. Once again, we are in a situation with <strong>many inter-related parts</strong>, which drives the complexity.
+This can be mitigated by following a strong discipline about state management (one-way dataflow,
+single store, reactive programming, etc.), and <strong>documentation</strong>, but this is on the programmer&rsquo;s onus. A lot of the complexity is inherent to the framework and has be to assumed.</p>
+
+<p>In summary, Angular2 is without a doubt a <strong>superb piece of technology</strong>. It often addresses
+efficiently most of the issues a developer must resolve when implementing a user interface. By doing so, it removes a source of incidental complexity through its abstractions (browser quirks, synchronizing state and view,
+routing, animation, performance, multi-platform targetting, etc.). However it also adds new
+complexity linked to the number of inter-related concepts/parts which have to be mastered, and the complexity of each of those parts. Taming that complexity will require <strong>considerable discipline</strong> on the side of the developer(s), <strong>good
+architecting</strong> on the side of the technical leadership, and the same level of <strong>supporting tools</strong>
+(CLI, visualizing component trees, router trees, inspecting component&rsquo;s properties, etc.) available for the DSL than for the core language. There will be projects where resorting to Angular2 does reduce the complexity more than it increases it. Large-scale, enterprise projects might fall in that category &mdash; few user-interface tricks, mostly workflow driven, complexity resides in the domain, more than in the user interface. There will also be projects where Angular2 will bring more problems than it
+ will solve.</p>
+
+<h1 id="react-component-model">React component model</h1>
+
+<h2 id="description-1">Description</h2>
+
+<p>Components let you split the UI into independent, reusable pieces, and think about each piece in isolation.
+Conceptually, components are like JavaScript functions. They accept arbitrary inputs (called
+“props”), a context (kind of global variable), and return React elements describing what should
+appear on the screen. Components can be defined either as a function (termed functional components) or as a class.</p>
+
+<p><strong>functional component</strong></p>
+
+<pre><code class="language-javascript">function Welcome(props, context) {
+  return &lt;h1&gt;Hello, {props.name}&lt;/h1&gt;;
+}
+</code></pre>
+
+<p>TODO : hugo shortcode for adding title to code</p>
+
+<p><strong>class-based component</strong></p>
+
+<pre><code class="language-javascript">class Welcome extends React.Component {
+  render() {
+    return &lt;h1&gt;Hello, {this.props.name}&lt;/h1&gt;;
+  }
+}
+</code></pre>
+
+<p>Components can be composed simply by referring to other components in their output. With the help
+ of the <code>JSX</code> DSL, we for instance can write :</p>
+
+<pre><code class="language-javascript">function App() {
+  return (
+    &lt;div&gt;
+      &lt;Welcome name=&quot;Sara&quot; /&gt;
+      &lt;Welcome name=&quot;Cahal&quot; /&gt;
+      &lt;Welcome name=&quot;Edite&quot; /&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+
+<p>The <code>Welcome</code> component itself could be broken into several other components. This gives rise to
+a component tree, which JSX allows to express in a readable form (additional benefits are better
+error and warning messages). The same principle guiding a good component breakdown applies here :
+ loosely-coupled, reusable components, assembled into cohesive parts (cf. <a href="https://reactjs.org/docs/components-and-props.html#extracting-components">extracting components</a> from the documentation).</p>
+
+<p>Generic components, which may admit an unspecified number or type of components, may also be
+drafted with the special property <code>props.children</code> which is akin to Angular2&rsquo;s<br />
+<code>&lt;ng-content&gt;&lt;/ng-content&gt;</code>, or the slot mechanism (<code>&lt;slot&gt;&lt;/slot&gt;</code>) of <a href="https://developers.google.com/web/fundamentals/web-components/shadowdom#slots">web components</a>. This is equivalent to passing the
+enclosed content of a component as a parameter like any other. An example can be found in the
+React&rsquo;s <a href="https://reactjs.org/docs/composition-vs-inheritance.html#containment">documentation</a>.</p>
+
+<p>The class-based version of components allow to express components which encapsulate state. State
+management is then handled through life-cycle hooks (<code>componentDidMount</code>, <code>componentWillUnmount</code>,
+ etc.) and ad-hoc methods possibly calling <code>setState</code> to update the local state. This is for
+ instance the code for a <code>Clock</code>  component  updating every second.</p>
+
+<pre><code class="language-javascript">class Clock extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {date: new Date()};
+  }
+
+  componentDidMount() {
+    this.timerID = setInterval(
+      () =&gt; this.tick(),
+      1000
+    );
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.timerID);
+  }
+
+  tick() {
+    this.setState({
+      date: new Date()
+    });
+  }
+
+  render() {
+    return (
+      &lt;div&gt;
+        &lt;h1&gt;Hello, world!&lt;/h1&gt;
+        &lt;h2&gt;It is {this.state.date.toLocaleTimeString()}.&lt;/h2&gt;
+      &lt;/div&gt;
+    );
+  }
+}
+</code></pre>
+
+<p>Note as the <code>tick</code> method updates local state, which automatically triggers the (re-)rendering of
+the clock.</p>
+
+<p>There are peculiarities to state update, but they are few : <a href="https://reactjs.org/docs/state-and-lifecycle.html#state-updates-may-be-asynchronous">state update may be asynchronous</a>, and
+ <a href="https://reactjs.org/docs/state-and-lifecycle.html#state-updates-are-merged">state updates are merged</a>.</p>
+
+<h2 id="application-architecture-1">Application architecture</h2>
+
+<p>Stateful components, i.e. components which manage their state, can be defined through classes.
+That class may hold event handlers, and other methods which directly and imperatively update the
+component&rsquo;s local state, triggering an update of the user interface. The <code>setState</code> accept a
+<code>prevState</code> parameter which allows to incrementally update the local state (vs. building the
+full state each time).</p>
+
+<p>Additionally, control flow may be expressed in regular <code>javascript</code>, in order to <a href="https://reactjs.org/docs/conditional-rendering.html">conditionally
+display</a> components, or iterate over them. <code>JSX</code> also provides some specific syntax to that purpose. Displaying lists requires assigning a key to each item, key which must
+be <a href="https://reactjs.org/docs/lists-and-keys.html#keys-must-only-be-unique-among-siblings">unique among siblings</a>.</p>
+
+<p><code>JSX</code>, while close to regular HTML, has some specific syntax (<a href="https://reactjs.org/docs/forms.html">forms</a>, <a href="https://reactjs.org/docs/handling-events.html">event binding</a>). There are however few specificities, the
+full syntax can be relatively quickly be acquired, and JSX can be <a href="https://reactjs.org/docs/react-without-jsx.html">entirely discarded</a> if need be in favor of standard javascript.</p>
+
+<p>React strongly encourages <a href="https://reactjs.org/docs/composition-vs-inheritance.html">composition over inheritance</a>,
+providing mechanisms to compose components which allow to avoid using class inheritance.</p>
+
+<p>There a few advanced React concepts (<a href="https://reactjs.org/docs/typechecking-with-proptypes.html">type checking</a>, <a href="https://reactjs.org/docs/refs-and-the-dom.html">Refs</a>, <a href="https://reactjs.org/docs/optimizing-performance.html">Performance</a>, <a href="https://reactjs.org/docs/fragments.html">Fragments</a>, <a href="https://reactjs.org/docs/portals.html">Portals</a>,
+<a href="https://reactjs.org/docs/error-boundaries.html">Error management</a>). Each of them has however a
+small surface, combine simply with the key concepts, resulting in an overall manageable complexity.</p>
+
+<h2 id="component-interaction-1">Component interaction</h2>
+
+<p>The <a href="https://reactjs.org/docs/">React documentation</a> lists 3 communication
+methods between components :</p>
+
+<ul>
+<li><a href="https://angular.io/guide/component-interaction#pass-data-from-parent-to-child-with-input-binding">Pass data from parent to child with input binding</a></li>
+<li><a href="https://reactjs.org/docs/lifting-state-up.html">Children with parent via &ldquo;protected&rdquo; shared state and handlers</a>
+
+<ul>
+<li>this is akin to Angular&rsquo;s communication via services. The shared state is lifted up to the
+closest common ancestor. The common ancestor passes both the shared state, and a handle to its
+children through <code>props</code>, handle by which the shared state can be modified (has a closure over
+the state, or access to the state via <code>this</code>). The passing of handlers reminisces of event
+binding. However the mechanism is more private, as only the parent which passes the handler can
+be affected by that &lsquo;event&rsquo;.</li>
+</ul></li>
+<li>components communicate between each other via global state
+
+<ul>
+<li>this may mean using the <a href="https://reactjs.org/docs/context.html"><code>context</code> feature</a> of React,
+and is <a href="https://medium.com/react-ecosystem/how-to-handle-react-context-a7592dfdcbc">strongly discouraged</a>.</li>
+<li>another possibility is have a global store at the app level. This is where additional
+libraries like <code>Redux</code> or <code>Mobx</code> come into play.</li>
+</ul></li>
+</ul>
+
+<p>In all cases, React strongly encourages <a href="https://reactjs.org/docs/state-and-lifecycle.html#the-data-flows-down">one-way dataflow</a> communication between components.</p>
+
+<h2 id="routing-1">Routing</h2>
+
+<p>Unlike <code>Angular2</code>, <code>React</code> routing does not require a pre-made list of routes to later integrate
+with the component tree. Routing is expressed by <a href="https://reacttraining.com/react-router/web/guides/philosophy">regular components</a>, and nested routing is just nesting components, like one would nest html&rsquo;s <code>div</code>. For instance :</p>
+
+<pre><code class="language-javascript">const App = () =&gt; (
+  &lt;BrowserRouter&gt;
+    {/* here's a div */}
+    &lt;div&gt;
+      {/* here's a Route */}
+      &lt;Route path=&quot;/tacos&quot; component={Tacos}/&gt;
+    &lt;/div&gt;
+  &lt;/BrowserRouter&gt;
+)
+
+// when the url matches `/tacos` this component renders
+const Tacos  = ({ match }) =&gt; (
+  // here's a nested div
+  &lt;div&gt;
+    {/* here's a nested Route,
+        match.url helps us make a relative path */}
+    &lt;Route
+      path={match.url + '/carnitas'}
+      component={Carnitas}
+    /&gt;
+  &lt;/div&gt;
+)
+</code></pre>
+
+<p>This is a very powerful mechanism, which only increases marginally complexity.</p>
+
+<h2 id="lifecycle-1">Lifecycle</h2>
+
+<p>In the context of stateful components, classed must have lifecycle methods. This means lifecycle
+of the local state has to be handled by hand. However, the library automatically handles the
+lifecycle of the component itself, using the hooks to complement its task.</p>
+
+<h2 id="testing-1">Testing</h2>
+
+<p>UI testing is a complex subject. It encompasses testing :</p>
+
+<ul>
+<li>UI structure : the view should have an expected structure as a function of its state (i.e.
+$view = f(state)$, where $f$ is a pure function)</li>
+<li>UI behaviour : some user action should lead to some system actions (remember the reactive
+equation $actions = f(state,events)$ where $f$ is a pure function)</li>
+<li>UI visual appearance (style, look, etc.) (this can be done by directly comparing pixel by pixel
+the rendered DOM and the target DOM)</li>
+</ul>
+
+<p>I will focus on structure and behaviour testing. React has two main available tools to that
+purpose : <code>Jest</code> and <code>Enzyme</code>. Both allow to render a component with or without a DOM, and test
+its content for the expected structure. A <code>simulate</code> method allow to emit events
+and observe the resulting change in the UI. Mocks and spies can also be used. A summary of the
+techniques, mostly up-to-date, even if the article is old, can be found <a href="http://reactkungfu.com/2015/07/approaches-to-testing-react-components-an-overview/">here</a>. The testing of actions can be
+ simplified with the use of <code>redux</code> and its derivated libraries.</p>
+
+<h2 id="conclusion-1">Conclusion</h2>
+
+<p>React is significantly less complex than Angular2 for two reasons. First of all, as a library, it
+takes on less responsibilities than a full-fledged framework like Angular2. Second, there are
+less parts to handle to build a react application, and each of those parts is relatively easy and
+ quick to understand on its own, with clear and simple interaction with the other parts.</p>
+
+<p>For instance, the pseudo-templating technology used (<code>JSX</code>) is optional, and embeds nicely into
+ regular javascript code. All the power of the Turing-complete javascript logic can be used to
+ render a component while still enjoying the benefits of a HTML-like syntax when necessary. <code>JSX</code>
+ is easy (very few syntactic constructs above HTML) and cohesively located exactly where used,
+ instead of the file separation imposed by <code>Angular2</code>.</p>
+
+<p>Furthermore, routing involves just regular components. There is very little new to learn to
+handle even nested routing. One-way dataflow simplifies state tracking. Similarly to Angular2,
+there are excellent DevTools which can be built for productivity gains.</p>
+
+<p>The most complex aspect is probably testing. <code>Angular2</code> requires what seems like some fairly
+complex set-up in comparison with <code>React</code>, but does offer dependency injection. React is silent
+on the latter. As a result, it is possible that complex applications may be a la fine easier to
+test with <code>Angular2</code>.</p>
+
+<p>In fact, adding functionalities to React, means adding parts, and then adding
+complexity sources. The most common extra parts (<code>Redux</code>, <code>redux-thunk</code>, <code>redux-saga</code>),
+are in increasing order of complexity, and have to be integrated manually, together with their
+respective workflow and tooling. Other possible parts (animations, etc.) have to be evaluated. At equal perimeter of features, <code>React</code> still compares favorably to  <code>Angular2</code>, but the distance is lower. There will be teams and projects for which <code>Angular2</code>
+ will generate a higher value, precisely because it imposes uniform choices, and its set of technologies is tightly integrated.</p>
+
+<h1 id="our-component-model">Our component model</h1>
+
+<h2 id="description-2">Description</h2>
+
+<p>Our component model is directly inspired by our functional approach to implement reactive
+systems, understood as a reactive function linking stream of events to stream of actions, and an
+interface with external systems to receive events and perform actions. A component in our model
+is a function with two arguments : <code>sources</code> and <code>settings</code>. The first argument is the interface to external
+systems&rsquo; events and state. The second argument represents the component parametrization concern,
+and will allow to have generic components which can be specialized or parameterized through those
+settings. Components in our model compute the relevant system actions to perform, and pass the
+result of that computation to so-called <strong>drivers</strong>, which interface with the external systems to
+ execute the relevant actions.  The computed actions are passed as an object whose every property
+  (termed sink) represents a sequence of actions to be handled by the driver for that property.</p>
+
+<p>Going back to our functional equations, a component implements a reactive function $f$ such that
+$actions = f(state, events)$. The  view update action can be shortened to $view = f(state)$, given that the only event which updates the  view is precisely a change of state, whose information is already included in the equation. In
+  short, we have :</p>
+
+<p>$$\begin{cases}
+   view &amp; = f_v(state) \\<br />
+   actions &amp; = f_a(state, events)
+\end{cases} $$</p>
+
+<p>Here is an example of component illustrating all the previous points :</p>
+
+<pre><code class="language-javascript">function NavigationItem(sources, settings) {
+  const { url$ } = sources;
+  const { project: { title, link } } = settings;
+  const linkSanitized = link.replace(/\//i, '_');
+
+  const events = {
+    // NOTE : we avoid having to isolate by using the link which MUST be unique over the whole
+    // application (unicity of a route)
+    click : sources.DOM.select(`.navigation-section__link.${linkSanitized}`).events('click')
+  };
+  const state$ = url$
+    .map(url =&gt; url.indexOf(link) &gt; -1)
+    .shareReplay(1);
+
+  const actions = {
+    domUpdate : state$.map(isLinkActive =&gt; {
+      const isLinkActiveClass = isLinkActive ? '.navigation-section__link--active' : '';
+
+      return a(
+        `${isLinkActiveClass}.navigation-item.navigation-section__link.${linkSanitized}`,
+        { attrs: { href: link }, slot: 'navigation-item' },
+        title)
+    }),
+    router : events.click
+      .do(preventDefault)
+      .map(always('/' + link + '/'))
+  }
+
+  return {
+    [DOM_SINK]: actions.domUpdate,
+    router: actions.router
+  }
+}
+</code></pre>
+
+<p>Note the 2 sinks, one for the DOM update driver, one for the router driver. The DOM update driver
+ receives the new DOM, computed only from <code>state$</code>.  The router driver receives the router
+ actions computed only from the events (reduced to <code>click</code> here). Last, note how fixed parameters
+ <code>{ project: { title, link } }</code> are passed to the <code>NavigationItem</code> component through <code>settings</code>.</p>
+
+<h2 id="application-architecture-2">Application architecture</h2>
+
+<p>For DOM updates, a <a href="https://github.com/snabbdom/snabbdom"><code>snabbdom</code></a> virtual DOM syntax is generally used. A virtual node is used for performance reasons. Writing the DOM as a function of state, means that we compute the full DOM
+every time. Because it would be inefficient to directly display the new DOM, without reusing the
+already displayed fragments of the current DOM, a virtual node mechanism allows to do a delta
+between virtual DOM objects, and use that diff to compute and only update the portions of the DOM
+that needs updating. Note that another syntax in which the dom updates are a function of the
+state delta (i.e. $ view_{\Delta} = f(state_{\Delta}) $ ) is also possible (that is the model for instance
+used by <a href="https://ractive.js.org/"><code>Ractive</code></a>), but has not been investigated for the moment.</p>
+
+<p>The actual syntax recognized for actions will vary for each driver, and as such should come as
+part of the documentation for each driver. Drivers perform whatever action on external systems
+which is part of their specification, and may produce a response, which is passed back into the
+application via a property of the <code>sources</code> object named the same as the driver&rsquo;s attributed sink.</p>
+
+<p>Streams are commonly used when writing the application, allowing to write equations once, with
+the runtime making sure that they keep in sync, by handling change propagation. This means in
+particular that there is no need for lifecycle methods, and no need for imperative update of state.</p>
+
+<p>The reactive functional programming core concepts are built on top of (here <code>rxjs</code>) streams.
+Events are streams which are <code>shared</code>, behaviours are streams which are <code>shareReplayed(1)</code>.
+Events modelize&hellip; events occuring in the system. Behaviours modelize pieces of state.
+The adopted granularity of state will depend on the programmer&rsquo;s design decision and
+domain at hand. At one extreme, one single behaviour may keep all state in one place. At the other
+ extreme, dividing the application state in pieces may lead to having one behaviour for each piece.</p>
+
+<p>As such, application architecture is rather simple (streams, events, behaviours, reactive
+function, drivers are all the parts), though one could argue that the complexity of manipulating
+state and events has been transferred to that of understanding and manipulating streams. However, it is my opinion that the stream abstraction benefits are such that it pays out in the end. Because we write equations, it is
+easy to reason about our component and application.</p>
+
+<p>Furthermore, we propose a component model which allows to write an application as the aggregation
+ of smaller, easier to reason about applications. The reactive system under implementation is
+ deconstructed into a component tree, which is assembled by component combinators to give back
+ the target application.</p>
+
+<p>Component combinators follow a syntax conceptually similar to <code>JSX</code>. For instance :</p>
+
+<p><strong>TODO</strong> title SidePanel</p>
+
+<pre><code class="language-javascript">export const SidePanel =
+  m({}, {}, [Div('.app__l-side'), [
+    Navigation({}, [
+      NavigationSection({ title: 'Main' }, [
+        m({}, { project: { title: 'Dashboard', link: 'dashboard' } }, [NavigationItem])
+      ]),
+      NavigationSection({ title: 'Projects' }, [
+        InSlot('navigation-item', [ListOfItemsComponent])
+      ]),
+      NavigationSection({ title: 'Admin' }, [
+        m({}, { project: { title: 'Manage Plugins', link: 'plugins' } }, [NavigationItem])
+      ]),
+    ])
+  ]]);
+</code></pre>
+
+<p>could be written :</p>
+
+<pre><code class="language-javascript">export const SidePanel = 
+  &lt;Div class='app__l-side'&gt;
+    &lt;Navigation&gt;      
+      &lt;NavigationSection title='Main'&gt;
+        &lt;NavigationItem project={ title: 'Dashboard', link: 'dashboard' }\&gt;
+      &lt;/NavigationSection&gt;
+      &lt;NavigationSection title='Projects'&gt;
+        &lt;Slot name='navigation-item'&gt;
+          ...
+        &lt;/Slot&gt;
+      &lt;/NavigationSection&gt;
+      &lt;NavigationSection title='Admin'&gt;
+        &lt;NavigationItem project={ title: 'Manage Plugins', link: 'plugins' }\&gt;
+      &lt;/NavigationSection&gt;
+    &lt;/Navigation&gt;
+  &lt;/Div&gt;
+</code></pre>
+
+<p>This opens the door to a <code>JSX</code>-like DSL and many other optimizations in the future.</p>
+
+<h2 id="component-interaction-2">Component interaction</h2>
+
+<p>There are 4 ways of interaction between components :</p>
+
+<ul>
+<li>Pass static (i.e. constants) parameterization data from parent to child with <code>settings</code>
+
+<ul>
+<li>this would be similar to the <code>props</code> passing in <code>React</code></li>
+</ul></li>
+<li>parent can inject state into children
+
+<ul>
+<li>this fulfills a similar purpose to the <code>[]</code> binding syntax in <code>Angular2</code></li>
+</ul></li>
+<li>components communicate between each other via global state
+
+<ul>
+<li>this means that a in-memory store driver could be used (à la <code>Redux</code>)</li>
+</ul></li>
+<li>components communicate between each other via events
+
+<ul>
+<li>a component may send an event to a pub/sub driver, and another component might listen to it.
+Note that while this pattern is possible, it is not often used in practice. Communication
+through shared state is likely preferable, due to the equational reasoning it facilitates.<br /></li>
+</ul></li>
+</ul>
+
+<h2 id="routing-2">Routing</h2>
+
+<p>Routing can be realized through the <code>OnRoute</code> combinator and is inserted naturally at the
+position of the component tree when the routing needs to occur. Routing can also be achieved
+directly without the combinator though there will necessary be more boilerplate. As a matter of
+fact, routing is matching a route change event to predefined component(s) actions, and as such
+remains within the conceptual framework without modification.</p>
+
+<h2 id="lifecycle-2">Lifecycle</h2>
+
+<p>There is no need for lifecycle management component-wise. Component are just functions. Events
+and behaviours exists as long as they are necessary, and picked up by the runtime when there is
+no more reference of them.</p>
+
+<h2 id="testing-2">Testing</h2>
+
+<p>Component can be tested via mocking of the interfaces with the external systems (<code>sources</code> and
+<code>drivers</code>).</p>
+
+<h2 id="conclusion-2">Conclusion</h2>
+
+<h1 id="conclusion-3">Conclusion</h1>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/posts/applying-componentization-to-reactive-systems---sample-application/">
+            <img class="icon-text" src="/img/prev.svg"/>Applying componentization to reactive systems : sample application</a>
+        
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#abstract">Abstract</a></li>
+<li><a href="#angular2-component-model">Angular2 component model</a>
+<ul>
+<li><a href="#description">Description</a></li>
+<li><a href="#application-architecture">Application architecture</a></li>
+<li><a href="#component-interaction">Component interaction</a></li>
+<li><a href="#routing">Routing</a></li>
+<li><a href="#lifecycle">Lifecycle</a></li>
+<li><a href="#testing">Testing</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul></li>
+<li><a href="#react-component-model">React component model</a>
+<ul>
+<li><a href="#description-1">Description</a></li>
+<li><a href="#application-architecture-1">Application architecture</a></li>
+<li><a href="#component-interaction-1">Component interaction</a></li>
+<li><a href="#routing-1">Routing</a></li>
+<li><a href="#lifecycle-1">Lifecycle</a></li>
+<li><a href="#testing-1">Testing</a></li>
+<li><a href="#conclusion-1">Conclusion</a></li>
+</ul></li>
+<li><a href="#our-component-model">Our component model</a>
+<ul>
+<li><a href="#description-2">Description</a></li>
+<li><a href="#application-architecture-2">Application architecture</a></li>
+<li><a href="#component-interaction-2">Component interaction</a></li>
+<li><a href="#routing-2">Routing</a></li>
+<li><a href="#lifecycle-2">Lifecycle</a></li>
+<li><a href="#testing-2">Testing</a></li>
+<li><a href="#conclusion-2">Conclusion</a></li>
+</ul></li>
+<li><a href="#conclusion-3">Conclusion</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+

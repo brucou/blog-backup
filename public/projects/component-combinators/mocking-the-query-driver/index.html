@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Mocking the query driver - Technuflections</title>
+
+		<meta name="description" content="Motivation In the context of our cyclejs-based architecture, to read external system&rsquo;s state (database content, external device, etc.) is realized by means of a domainQuery driver. That driver relies on a domain model abstraction : a query has a context (for example a bounded context, or a domain entity), and parameters. As of now, the domainQuery only allows one type of domain operation (typically a get operation).
+Here is an example of configuration for a domain with two entities (projects and opportunities) :">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>Mocking the query driver</h1>
+	<h5> Last modified on
+		Jan 29, 2018
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			3 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>In the context of our cyclejs-based architecture, to read external system&rsquo;s state (database content, external device, etc.) is realized by means of a <code>domainQuery</code> driver. That driver relies on a domain model abstraction :
+a query has a context (for example a bounded context, or a domain entity), and parameters. As of
+now, the <code>domainQuery</code> only allows one type of domain operation (typically a <code>get</code> operation).</p>
+
+<p>Here is an example of configuration for a domain with two entities (projects and opportunities) :</p>
+
+<pre><code class="language-javascript">export const domainObjectsQueryMap = {
+
+    get: function getProjectByProjectKey(repository, context, params) {
+      const { projectKey } = params;
+      const localforageKey = [PROJECTS_REF, projectKey].join(KEY_SEP);
+
+      return repository.getItem(localforageKey);
+    }
+  },
+
+    get: function getOpportunityByOppKey(repository, context, params) {
+      const { opportunityKey } = params;
+      const localforageKey = [OPPORTUNITY_REF, opportunityKey].join(KEY_SEP);
+
+      return repository.getItem(localforageKey);
+    }
+  },
+  ...
+</code></pre>
+
+<p>Here is an example of using the <code>domainQuery</code> driver :</p>
+
+<pre><code class="language-javascript">export function fetchUserApplication(domainQuery, opportunityKey, userKey) {
+  return domainQuery.getCurrent(USER_APPLICATION, { userKey, opportunityKey })
+}
+</code></pre>
+
+<p>To be able to test applications written within our architecture, we propose a mechanism to mock
+ the <code>domainQuery</code> driver, hence avoiding the side-effects performed by such driver.</p>
+
+<p>In connection with the <code>runTestScenario</code> <a href="https://brucou.github.io/projects/component-combinators/runtestscenario/#mocking">mock factory syntax</a>, we propose here a syntax
+ <code>domainQuery!stringifiedParams@context</code> for mocked inputs. This will match a code written as <code>sources.domainQuery.getCurrent(context, parsedParams)</code>, where <code>parsedParams = JSON.parse(stringifiedParams)</code>.</p>
+
+<h1 id="api">API</h1>
+
+<p>The <code>makeDomainQuerySource</code> function is exported to be used in conjunction with <code>runTestScenario</code>
+helper. For example :</p>
+
+<pre><code class="language-javascript">  const inputs = [
+    ...
+    {
+      [`domainQuery!${mockUserAppParams}@${USER_APPLICATION}`]: {
+        diagram: 'u----', values: { u: null }
+      }
+    },
+    {
+      [`domainQuery!${mockTeamsParams}@${TEAMS}`]: {
+        diagram: 'v----', values: { v: teams[`${TEAMS_REF}!${fakeProjectKey}`] }
+      }
+    },
+    ...
+    ];
+
+  runTestScenario(inputs, testResults, ProcessApplication, {
+    tickDuration: 5,
+    waitForFinishDelay: 20,
+    analyzeTestResults: analyzeTestResults(assert, done),
+    mocks: {
+      DOM: makeMockDOMSource,
+      document: makeMockDocumentSource,
+      domainQuery: makeDomainQuerySource
+    },
+    sourceFactory: {
+      ...
+      [`domainQuery!${mockUserAppParams}@${USER_APPLICATION}`]: subjectFactory,
+      [`domainQuery!${mockTeamsParams}@${TEAMS}`]: subjectFactory,
+      ...
+    },
+</code></pre>
+
+<p>Note the mocked input syntax and the passing of timed diagrams. Also, as of now,
+<code>runTestScenario</code> requires the user to specify a factory for the input streams to which the
+mocked inputs will be sent. In a live query case, this factory would typically be a <code>() =&gt; new Rx.ReplaySubject(1)</code>. In a standard case, it will usually be a <code>() =&gt; new Rx.Subject()</code>, but it will depend on the particular
+component function under test.</p>
+
+<p>To get a deeper understanding of the consequences of each choice,
+one can refer to the <a href="https://github.com/brucou/component-combinators/tree/master/test/mockDomainQuery.specs.js">corresponding tests</a>,
+and play with changing the type of subjects used, and see how the computed output changes. For
+instance, in the [once query test], changing a standard subject to a memoized subject will lead
+to the last output of <code>ANOTHER_SOURCE</code> to change to <code>${YET_ANOTHER_PREFIX}-${A_STRING}</code> from
+<code>${YET_ANOTHER_PREFIX}-${A_NUMBER}</code>, as the source inputs are <code>null, A_STRING, A_NUMBER</code>. With a
+memoized subject, the memoized input at the moment of execution of <code>getCurrent</code> is used, hence the
+ <code>A_STRING</code>.  With a standard subject, at the moment of execution of <code>getCurrent</code>, the first value
+  emitted (in the future) is taken, hence <code>A_NUMBER</code>.</p>
+
+<h1 id="contracts">Contracts</h1>
+
+<ul>
+<li>In <code>domainQuery!stringifiedParams@context</code>, both <code>stringifiedParams</code> and <code>context</code> must be non empty.</li>
+<li>both <code>stringifiedParams</code> and <code>context</code> cannot have a <code>@</code> character</li>
+<li><code>stringifiedParams</code> must correspond to a JSON string (meaning for instance that <code>undefined</code> is<br />
+not a valid value)</li>
+<li><code>context</code> <strong>may</strong> start with <code>LIVE_QUERY_TOKEN</code>. This however must be consistent in the whole
+test parameterization, i.e. it is not allowed in the same test to have the same context with a
+different syntax.</li>
+</ul>
+
+<h1 id="example">Example</h1>
+
+<p>cf. <a href="https://github.com/brucou/component-combinators/blob/master/examples/volunteerApplication/test/app.specs.js#L199">tests</a> from an example application.</p>
+
+<p>Also <a href="https://github.com/brucou/component-combinators/blob/master/test/mockDomainQuery.specs.js">core tests</a> available.</p>
+
+<h1 id="tips">Tips</h1>
+
+<ul>
+<li>choose carefully the type of subject factory in function of th implementation under test.
+Nothing more frustating than writing tests that are wrong, with an implementation that is right
+(you can&rsquo;t test the tests, so write the tests right).</li>
+</ul>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/inslot/">
+            <img class="icon-text" src="/img/prev.svg"/>InSlot</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/mocking-the-document-driver/">Mocking the document driver<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#api">API</a></li>
+<li><a href="#contracts">Contracts</a></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

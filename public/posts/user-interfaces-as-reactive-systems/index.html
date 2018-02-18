@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>User interfaces as reactive systems - Technuflections</title>
+
+		<meta name="description" content="Background As the name suggests, user interfaces allow a user to interface with other systems, with the idea that this interface will present some sought-for advantages vs. direct interaction with the mentioned systems.
+For instance, when the interaction between systems becomes too complex (too many commands or sequences of commands, too many parameters, outputs difficult to exploit in their raw form, etc.), a user interface can help to reduce the cognitive load and the risk of errors on the user side.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>User interfaces as reactive systems</h1>
+	<h5>
+		<time datetime="2017-06-11 00:00:00 &#43;0000 UTC">Jun 11, 2017</time>
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			15 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+    
+
+<h1 id="background">Background</h1>
+
+<p>As the name suggests, user interfaces allow a user to <strong>interface</strong> with other systems, with the idea that this interface will present some sought-for advantages vs. direct interaction with the mentioned systems.<br />
+For instance, when the interaction between systems becomes too complex (too many commands or sequences of commands, too many parameters, outputs difficult to exploit in their raw form, etc.), a user interface can help to reduce the cognitive load and the risk of errors on the user side. As a trivial example, while it is possible for a travel agent to interact directly with the reservation system, doing so through a well-designed user interface allows to have agents with little knowledge of the intricacies of the underlying systems. They can focus instead on mastery of their specific <strong>domain</strong> (travel
+packages, customer segments, etc.) and the <strong>user stories</strong> which the user interface facilitates
+(book a flight, cancel a hotel, etc.).</p>
+
+<p>The user expresses an intent through some input means (key presses, vocal entry, etc.) with a view to realize pre-defined actions on the interfaced systems. Hence <strong>user interfaces are reactive systems</strong> almost by nature.</p>
+
+<p>They are additionally <strong>concurrent systems</strong>, as the user can continue to send orders through the
+user interface without waiting for the currently processed order to be completed. As such, user interface programming has the added complication of handling concurrency, both at a system and user interface level.</p>
+
+<p>Any specification and implementation techniques for user interfaces must then specify a <strong>correspondence between user inputs and system actions</strong>, and the concurrent behaviour of the system. We will review thereafter specification and implementation techniques.</p>
+
+<h1 id="specification-and-implementation-techniques">Specification and implementation techniques</h1>
+
+<p>In all what follows, it will be implicit that <code>event</code> and <code>action</code> are representations of the corresponding entities, i.e. not the actual events or actions, whatever that be, but symbols for those.</p>
+
+<p>Functional and technical specifications for reactive systems must allow to extract :</p>
+
+<ol>
+<li>an interface by which the reactive system receives its events</li>
+<li>a relation between events and actions such that $event \sim action$, where
+
+<ul>
+<li>$\sim$ is called here the reactive relation</li>
+<li>event is an event received through the user interface and triggering an action. Events can be
+
+<ul>
+<li>user-initiated</li>
+<li>system-initiated i.e. generated by the environment or external world</li>
+</ul></li>
+</ul></li>
+<li>an interface with the systems through which actions intended by the user must be performed</li>
+</ol>
+
+<p>Because most reactive systems are stateful, the relation $\sim$ is not in general a <strong>deterministic</strong> (the same output associated for the same input, as opposed to probabilistic functions) <strong>function</strong> (which can only associate <strong>ONE</strong> output to an input).</p>
+
+<p>Many frameworks for implementing user interfaces (<code>Angular2</code>, <code>Ember</code>,
+<code>Ractive</code>, <code>React</code>, etc.) make use of callback <strong>procedures</strong><sup class="footnote-ref" id="fnref:defProcedure"><a rel="footnote" href="#fn:defProcedure">1</a></sup>, or event handlers, which, when triggered by an event, directly <strong>perform</strong> the corresponding action. A few important issues stem from that choice :</p>
+
+<ul>
+<li>having the procedure directly handling in the same bundle different concerns such as input validation, performing triggered actions, error management, updating local state, makes it harder to trace, debug and reason about the program execution. The concurrent nature of user interfaces magnifies this issue.</li>
+<li>procedures also do not compose as easily as pure functions, which limits the use of componentization techniques to reduce complexity and increase reuse. As a matter of fact, <code>React</code>&rsquo;s componentization model is limited to
+addressing the view concern.</li>
+<li>while generally optimized, efficient, and thorough, the low-level description such frameworks
+offer is very far from the specification of the systems, making implementation error-prone and certification activities very difficult.</li>
+</ul>
+
+<p>However, when the reactive relation can be made into a deterministic function, by separating events and actions from their representation, and making local state explicit, miscellaneous implementation methods borrowing at various degrees from functional programming techniques, have some nice characteristics. We will focus in what follows on such implementation techniques.</p>
+
+<p>To that purpose, we identify three models, which will be detailed thereafter :</p>
+
+<ul>
+<li>a reactive function gives for each event both the local state update, and the action to perform (<code>Elm</code> model)</li>
+<li>a reactive function expressed as the transition function for an automata (state machine model)</li>
+<li>a reactive function specified as a set of concurrent equations (the formal model)</li>
+</ul>
+
+<p>In any case, a reactive system run leads to traces which are the sequence of <code>(events, actions)</code>
+which have occurred during the period of the run. To a correct behaviour of a reactive system
+corresponds a set of admissible traces. Conversely, testing a reactive system consists in
+invalidating actual traces vs. the set of admissible traces. We will finish with addressing the
+visualization of such traces.</p>
+
+<h2 id="reactive-system-as-a-joint-specification-of-local-state-updates-and-actions">Reactive system as a joint specification of local state updates and actions</h2>
+
+<p>Most of the time, it is possible to formalize a state for the reactive system such that : $(action, new\ state) = f(state, event)$ where :</p>
+
+<ul>
+<li>$f$ is a pure function</li>
+<li>$state$ subsumes all the variability resulting from the environment and the reactive system&rsquo;s specifications, so that $f$ is pure</li>
+</ul>
+
+<p>$f$ will be termed here as the <strong>reactive function</strong>. If we index time chronologically by a natural integer, so that the index $n$ corresponds to the $n^{th}$ event occurring, we have :</p>
+
+<ul>
+<li>$(action_n,\ state_{n+1}) = f(state_n,\ event_n) $ where :
+
+<ul>
+<li>$n$ is the $n^{th}$ event processed by the reactive system</li>
+<li>$state_n$ is the state of the reactive system <strong>when the $n$th event is processed</strong></li>
+<li>we hence have an implicit temporal relation here between the event occurrence and the state used to compute the reaction of the system.</li>
+</ul></li>
+</ul>
+
+<p>Those observations give rise to implementation techniques relying on a reactive function $f$ which <strong>explicitly</strong> computes and exposes for each event the new state of the reactive system, and the action to execute. Notable examples are :</p>
+
+<ul>
+<li><strong>Elm</strong> : The <code>update :: Msg -&gt; Model -&gt; (Model, Cmd Msg)</code> function corresponds closely to the reactive function $f$, <code>Msg</code> to <code>events</code>, <code>Model</code> to <code>states</code>, <code>Cmd Msg</code> to <code>actions</code>.</li>
+<li><strong>Purescript/pux</strong> : <code>foldp :: ∀ fx. Event -&gt; State -&gt; EffModel State Event fx</code> function is the equivalent formulation within <a href="http://purescript-pux.org/docs/architecture/">purescript/pux</a> framework</li>
+</ul>
+
+<h3 id="example">Example</h3>
+
+<p>Here is for example a run for the user story <code>User can book a trip</code>, for a reservation system :</p>
+
+<table>
+<thead>
+<tr>
+<th><code>n</code></th>
+<th>Event</th>
+<th>State (update)</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>Init</td>
+<td>is_round_trip : false today_date = &lsquo;13.12.2017&rsquo;</td>
+<td>Fetch recent searches, origin list, destination list</td>
+</tr>
+
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>Display initial screen</td>
+</tr>
+
+<tr>
+<td><code>1</code></td>
+<td>Click on <code>Return ticket</code></td>
+<td>is_round_trip : true</td>
+<td>Update screen with <code>Return Departure</code> enabled</td>
+</tr>
+
+<tr>
+<td><code>2</code></td>
+<td>Click on <code>From</code> dropdown</td>
+<td></td>
+<td>Update screen to display <code>Stations</code> dropdown</td>
+</tr>
+
+<tr>
+<td><code>3</code></td>
+<td>Select <code>Vienna</code></td>
+<td></td>
+<td>Update screen to display chosen trip&rsquo;s origin</td>
+</tr>
+
+<tr>
+<td><code>4</code></td>
+<td>Click on <code>To</code> input field</td>
+<td></td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>5</code></td>
+<td>Type <code>p</code></td>
+<td></td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>6</code></td>
+<td>Type <code>r</code></td>
+<td></td>
+<td></td>
+</tr>
+
+<tr>
+<td><code>7</code></td>
+<td>Type <code>a</code></td>
+<td></td>
+<td>Update screen with display of filtered origin list</td>
+</tr>
+
+<tr>
+<td><code>8</code></td>
+<td>Select Prague</td>
+<td></td>
+<td>Update screen to display chosen trip&rsquo;s destination</td>
+</tr>
+
+<tr>
+<td><code>9</code></td>
+<td>Click on <code>Return Departure</code> input field</td>
+<td></td>
+<td>Update screen with calendar initialized with <code>today_date</code></td>
+</tr>
+
+<tr>
+<td><code>10</code></td>
+<td>Select <code>14.12.2017</code> as departure date</td>
+<td></td>
+<td>Update screen with chosen departure date</td>
+</tr>
+
+<tr>
+<td><code>11</code></td>
+<td>Click on <code>Search</code> button</td>
+<td></td>
+<td>Search API call to reservation database</td>
+</tr>
+
+<tr>
+<td><code>12</code></td>
+<td>API call completed successfully</td>
+<td></td>
+<td>Update screen with search results</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="reactive-systems-as-automata">Reactive systems as automata</h2>
+
+<p>By using streams to represent sequences over time, and using the functor associated to streams, the equation is rewrote as $(actions, next(states,\ events)) = f(states,\ events)$ where :</p>
+
+<ul>
+<li>$f$ is a pure function, taking a stream of events to a stream of actions</li>
+<li>$next$ is derived from the reactive system&rsquo;s specification
+
+<ul>
+<li>i.e. specifying how the state of the reactive system changes in response to an event</li>
+</ul></li>
+<li>$states$ is a sequence where each value is the corresponding state of the reactive system at the time when an event is triggered, and subject to the equation :
+
+<ul>
+<li>$states_0$ is the initial state of the system</li>
+<li>$next(states,\ events)$ is such that :
+
+<ul>
+<li>$states_n = next(states_{n-1},\ events_{n-1})$ (1)</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<p>The $states$ stream hence has a recursive definition. Lazily-evaluated languages will allow for expressing $states$ quite naturally as a fixed point for $x \rightarrow next(x, events)$, while imperative languages may directly use
+equation (1). We will refer to the <code>next</code> function as the <strong>state transition function</strong>.</p>
+
+<p>Assuming the state transition function has been determined, the reactive system behaviour is
+then entirely described by the following equations, which are those corresponding to a class of automata called state transducer<sup class="footnote-ref" id="fnref:transducer"><a rel="footnote" href="#fn:transducer">2</a></sup> :</p>
+
+<p>$$\begin{cases}
+states &amp;=&amp; next(states, events) \\<br />
+actions &amp;=&amp; f(states, events)
+\end{cases}
+$$</p>
+
+<p>State transducers are state machines, which have an internal state, and on receiving an input, may produce an output and update their internal state. This opens the path to implementing reactive systems with state machines. This further opens the door to a well-studied set of techniques used in that area : tracing, visualization, automatic code generation, model-based testing, formal reasoning.</p>
+
+<p>Knowing that state transducers are translators between input symbols and output symbols, it seems logical that they can be used for specifying and implementing reactive systems. As a matter of fact, a reactive system translates the actions of the user on the user interface to actions on the interfaced system.</p>
+
+<p>A major reference for specification and implementation techniques based on the state machine formalism can be found in <em>Constructing the User Interface With Statecharts</em> by Ian Horrocks<sup class="footnote-ref" id="fnref:Horrocks"><a rel="footnote" href="#fn:Horrocks">3</a></sup>. Alternatively, an introduction to the technique can be found in this <a href="https://medium.com/@asolove/pure-ui-control-ac8d1be97a8d">medium article</a>.</p>
+
+<p>A typical application area for statecharts is rapid prototyping of embedded systems as they occur
+ in avionics and automobile industry. Among other things, their success comes from two facts :</p>
+
+<ul>
+<li>it is an easy to learn language for design specialists who have more often a degree in
+electrical or electronic engineering than a solid background in computer science. Those engineers
+have a considerably better intuition of the meaning of automata than of algebraic
+specification techniques, for instance.</li>
+<li>statecharts are available as description technique in commercial products (StateMate, Rhapsody, Stateflow, Yakindu Statechart Tools, visualSTATE, and many more).</li>
+</ul>
+
+<h3 id="example-1">Example</h3>
+
+<p>Here is, extracted from Ian Horrocks&rsquo; seminal book, an example of state charts specification for
+a CD player. We reproduce here the state chart which synthesizes visually the state transition
+function. Another document (not reproduced here) would specify the actual actions, and the
+finer-grained modification to the state machine&rsquo;s state to perform on transitioning, entering or
+exiting control states:</p>
+
+<p><img src="http://i.imgur.com/ygsOVi9.jpg" alt="CD player statechart specification" /></p>
+
+<h2 id="reactive-systems-as-a-system-of-equations">Reactive systems as a system of equations</h2>
+
+<p>Assuming a monoid operation $\cup$ which allows to decompose actions into a sum of pieces, we can
+write $actions = \cup_A actions_a$. Assuming that the same goes for events, and states :</p>
+
+<p>$$\begin{aligned}
+actions  &amp; = \bigcup_A actions_a \\<br />
+         &amp; = \bigcup_A f_a(states, events) \\<br />
+         &amp; = \bigcup_A f_a(\bigcup_{S_a} states_s, \bigcup_{E_a} events_e)
+\end{aligned}
+$$</p>
+
+<p>In FRP, $states_s$ are variables called behaviours, while $events_e$ and $actions_a$ are
+events. We then rewrite our equation into a series of equations $actions_a = f_a(\cup_{S_a} states_s, \cup_{E_a} events_e)$, which computes actions of a given slice $a$ from the events $E_a$ and behaviours $S_a$ relevant to that
+slice. As a matter of fact, it is often the case that a given action does not depend on the whole
+ set of events and behaviours but only a subset of such.</p>
+
+<p>For instance, considering a reservation system with $events = \{search\_click, api\_call\_response\}$, and
+$states =\{origin, destination, dates, cart\}$:</p>
+
+<p>$$\begin{cases}
+api\_call &amp; = f(\{origin, destination, dates\}, search\_click) \\<br />
+retry &amp; = g(null, api\_call\_response) \\<br />
+show\_payment\_screen &amp; = h(cart, api\_call\_response)
+\end{cases}
+$$</p>
+
+<p>$api\_call$ does not depend on $cart$, nor does it depend on $api\_call\_response$.</p>
+
+<p>Dataflow languages, such as Lucid Synchrone, use such an equational approach both for specification and implementation of reactive systems<sup class="footnote-ref" id="fnref:synchronous"><a rel="footnote" href="#fn:synchronous">4</a></sup>. The approach used by Lucid Synchrone and the like is particularly interesting for user interfaces in safety-critical domain (avionics, automotive, medicine, nuclear plants&hellip;) with stringent certification requirements. By keeping the implementation close to the specification, restricting the target implementation language and defining formal semantics for it, it is possible to guarantee liveliness and safety properties of the implemented system.</p>
+
+<h3 id="example-2">Example</h3>
+
+<p>We reproduce here the coffee machine example taken from <a href="https://www.di.ens.fr/~pouzet/lucid-synchrone/lucid-synchrone-3.0-manual.pdf">lucid synchrone manual</a>. The description is the following. The machine may serve coffee or tea. A tea costs ten cents whereas a coffee costs five. The user may enter dimes or nickels. He can select a tea, a coffee or ask for his money back.</p>
+
+<p>We see thereafter how the streams <code>drink</code> and <code>devolution</code> are equationally derived from streams
+<code>coin</code> and <code>button</code>, which are themselves derived from external systems (here the keyboard)
+<sup class="footnote-ref" id="fnref:lucid"><a rel="footnote" href="#fn:lucid">5</a></sup>.</p>
+
+<pre><code>type coin = Dime | Nickel
+type drinks = Coffee | Tea
+type buttons = BCoffee | BTea | BCancel
+
+(* producing events from the keyboard *)
+let node input key = (coin, button) where
+match key with
+    &quot;N&quot; -&gt; do emit coin = Nickel done
+  | &quot;D&quot; -&gt; do emit coin = Dime done
+  | &quot;C&quot; -&gt; do emit button = BCoffee done
+  | &quot;T&quot; -&gt; do emit button = BTea done
+  | &quot;A&quot; -&gt; do emit button = BCancel done
+  | _ -&gt; do done
+  end
+
+(* Now we define a function which outputs a drink and returns some money when necessary. *)
+let node coffee coin button = (drink, devolution) where
+  rec last v = 0
+  and present
+      coin(Nickel) -&gt;
+        do v = last v + 5 done
+      | coin(Dime) -&gt;
+        do v = last v + 10 done
+      | button(BCoffee) -&gt;
+        do (drink, v) = vend Coffee 10 (last v)
+        done
+      | button(BTea) -&gt;
+        do (drink, v) = vend Tea 5 (last v)
+        done
+      | button(BCancel) -&gt;
+        do v = 0
+        and emit devolution = last v
+        done
+  end
+
+(* auxiliary : emits a drink if the accumulated value [v] is greater than [cost] *)
+let node vend drink cost v = (o1, o2) where
+    match v &gt;= cost with
+      true -&gt;
+        do emit o1 = drink
+        and o2 = v - cost
+        done
+    | false -&gt;
+        do o2 = v done
+    end  
+</code></pre>
+
+<h3 id="an-imperative-language-approach">An imperative language approach</h3>
+
+<p>A similar, though more relaxed approach, is taken by <code>cyclejs</code> which further collapses the $states$ stream into the $actions$ streams, by considering that state change is itself an action over the internal state of the system. To keep the equivalence to the original formulation, this approach however requires to clearly and consistently define the timing of the internal state update action vs. actions on the interfaced external systems : the internal state update must be executed before the next event is processed<sup class="footnote-ref" id="fnref:instantStateUpdate"><a rel="footnote" href="#fn:instantStateUpdate">6</a></sup>. In the cycle framework, <code>App :: Sources -&gt; Sinks</code>, where <code>Sources</code> contains any necessary accessor/factory methods for the state of the system and events admitted by the system, and <code>Sinks</code> holds the actions triggered by the events.</p>
+
+<p>Here is an example of cyclejs code, showing the split of the actions into two action streams,
+each computed from its corresponding events and behaviours :</p>
+
+<pre><code class="language-javascript">function NavigationItem(sources, settings) {
+  const { url$ } = sources;
+  const { project: { title, link } } = settings;
+  const linkSanitized = link.replace(/\//i, '_');
+
+  const events = {
+    // NOTE : we avoid having to isolate by using the link which MUST be unique over the whole
+    // application (unicity of a route)
+    click : sources.DOM.select(`.navigation-section__link.${linkSanitized}`).events('click')
+  };
+  const state$ = url$
+    .map(url =&gt; url.indexOf(link) &gt; -1)
+    .shareReplay(1);
+
+  const actions = {
+    domUpdate : state$.map(isLinkActive =&gt; {
+      const isLinkActiveClass = isLinkActive ? '.navigation-section__link--active' : '';
+
+      return a(
+        `${isLinkActiveClass}.navigation-item.navigation-section__link.${linkSanitized}`,
+        { attrs: { href: link }, slot: 'navigation-item' },
+        title)
+    }),
+    router : events.click
+      .do(preventDefault)
+      .map(always('/' + link + '/'))
+  }
+
+  return {
+    [DOM_SINK]: actions.domUpdate,
+    router: actions.router
+  }
+}
+</code></pre>
+
+<h2 id="visualization">Visualization</h2>
+
+<p>A run from the aforementioned <a href="#example">trip reservation interface example</a> may be represented
+more succinctly on a timelined diagram :</p>
+
+<pre><code class="language-csv">events : iccsctttscscS
+state  : ++-----------
+actions: fuuu---uuuuSu
+         u
+
+c : click event
+s : select event
+t : type event
+S : search API call event/action
+u : update screen event
+f : fetch remote data
++ : state update
+</code></pre>
+
+<p>Implementations of reactive systems which allow to obtain the trace of a run as a sequence of <code>
+(event, action)</code> (or any equivalent format) also allow to reduce testing of such systems to checking
+ an actual trace vs. a set of expected traces.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>User interfaces are reactive systems and as such can be specified by means of its events/actions interface with the external systems of interest, and a pure reactive function mapping the actions of the user on the user interface to actions on the interfaced system.</p>
+
+<p>Implementation techniques leveraging functional programming techniques, can lead to an implementation closer to the specification, easier to reason about and maintain. In the best case, implementations may be automatically generated from the specifications and amenable to formal verification.</p>
+
+<h1 id="bibliography">Bibliography</h1>
+
+<ul>
+<li><a href="https://www.di.ens.fr/~pouzet/bib/chap_lucid_synchrone_english_iste08.pdf"><strong>Synchronous Functional Programming: The Lucid Synchrone Experiment</strong></a>
+Chapter 1.1 is an amazing introduction to the drivers behind the rise of synchronous languages vs. regular languages for critical software(avionics etc.) : the closeness between specification and implementation allows to formally guarantee properties.</li>
+</ul>
+
+<blockquote>
+<p>Synchronous languages are based on the synchronous hypothesis. This hypothesis comes from the idea of separating the functional description of a system from the constraints of the architecture on which it will be executed.</p>
+</blockquote>
+
+<ul>
+<li><a href="https://www.lri.fr/~sebag/Slides/Pouzet.pdf"><strong>Functional Synchronous Programming of Reactive Systems</strong></a><br />
+Rationale behind functional synchronous programming for reactive systems, domains of application, state of the art.</li>
+</ul>
+
+<blockquote>
+<p>Concurrency and determinism are absent but they are fundamental! Design specific languages with a limited expressive power, a formal semantics, well adapted to the culture of the field</p>
+</blockquote>
+
+<ul>
+<li><a href="https://mitpress.mit.edu/books/concepts-techniques-and-models-computer-programming"><strong>Concepts, Techniques, and Models of Computer Programming</strong></a>
+chapter 4, in particular section 4.3.4.</li>
+<li><a href="https://www.tablesgenerator.com/markdown_tables">markdown tables helper</a></li>
+</ul>
+<div class="footnotes">
+
+<hr />
+
+<ol>
+<li id="fn:defProcedure">In the present context, a procedure is a routine, i.e. a sequence of statements, written against a runtime system, which executes them. Such procedures may or may not take arguments, may or may not return values, and may or may not perform side-effects.
+ <a class="footnote-return" href="#fnref:defProcedure"><sup>[return]</sup></a></li>
+<li id="fn:transducer">Finite-State Machines, <a href="http://www.cse.chalmers.se/~coquand/AUTOMATA/book.pdf">http://www.cse.chalmers.se/~coquand/AUTOMATA/book.pdf</a>, cf. p.479
+ <a class="footnote-return" href="#fnref:transducer"><sup>[return]</sup></a></li>
+<li id="fn:Horrocks"><a href="https://www.amazon.com/Constructing-User-Interface-Statecharts-Horrocks/dp/0201342782">Constructing the User Interface With State charts, Ian Horrocks</a> 
+ <a class="footnote-return" href="#fnref:Horrocks"><sup>[return]</sup></a></li>
+<li id="fn:synchronous"><a href="https://www.lri.fr/~sebag/Slides/Pouzet.pdf">https://www.lri.fr/~sebag/Slides/Pouzet.pdf</a>, Functional Synchronous Programming of Reactive Systems ; <a href="https://www.di.ens.fr/~pouzet/bib/chap_lucid_synchrone_english_iste08.pdf">https://www.di.ens.fr/~pouzet/bib/chap_lucid_synchrone_english_iste08.pdf</a>, Synchronous Functional Programming: The Lucid Synchrone Experiment
+ <a class="footnote-return" href="#fnref:synchronous"><sup>[return]</sup></a></li>
+<li id="fn:lucid">Note the use of recursivity to equationally define the operator <code>coffee</code> : use of <code>rec</code> and <code>last</code>. Also, the keyword <code>node</code> is used to indicate <em>combinatorial</em> streams (vs. sequential streams), which are streams whose current value depends on past values. 
+ <a class="footnote-return" href="#fnref:lucid"><sup>[return]</sup></a></li>
+<li id="fn:instantStateUpdate">so that we maintain $states_n = next(states_{n-1}, events_{n-1})$. If the $n$th event would be processed before $state_n$ is set through the equation, the $next$ function could be computing an invalid state for the reactive system.
+ <a class="footnote-return" href="#fnref:instantStateUpdate"><sup>[return]</sup></a></li>
+</ol>
+</div>
+
+    </div>
+    <nav>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/posts/componentization-against-complexity/">Componentization against complexity<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#background">Background</a></li>
+<li><a href="#specification-and-implementation-techniques">Specification and implementation techniques</a>
+<ul>
+<li><a href="#reactive-system-as-a-joint-specification-of-local-state-updates-and-actions">Reactive system as a joint specification of local state updates and actions</a>
+<ul>
+<li><a href="#example">Example</a></li>
+</ul></li>
+<li><a href="#reactive-systems-as-automata">Reactive systems as automata</a>
+<ul>
+<li><a href="#example-1">Example</a></li>
+</ul></li>
+<li><a href="#reactive-systems-as-a-system-of-equations">Reactive systems as a system of equations</a>
+<ul>
+<li><a href="#example-2">Example</a></li>
+<li><a href="#an-imperative-language-approach">An imperative language approach</a></li>
+</ul></li>
+<li><a href="#visualization">Visualization</a></li>
+</ul></li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#bibliography">Bibliography</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+

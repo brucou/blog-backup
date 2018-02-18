@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Default merge functions and slotted content - Technuflexions</title>
+
+		<meta name="description" content="Motivation We want in this section to describe the default merge functions used by the m component factory, when no such merge function is supplied by the user.
+DOM merge The DOM merge function relating to m :: ComponentDef -&gt; Settings -&gt; [ParentComponent, Array&lt;ChildComponent&gt;]) has the following signature : DOMDefaultMerge :: Nullable&lt;ParentDOMSink&gt;, Array&lt;DOMSink&gt;, Settings, where :
+ ParentDOMSink encapsulates the DOM produced by ParentComponent Array&lt;DOMSink&gt; encapsulates the DOM produced by the childrenArray&lt;ChildComponent&gt; Settings follows the usual inheritance rules of settings through the component tree  If the user does not supply a merge function through the ComponentDef parameter, the default one is used.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>Default merge functions and slotted content</h1>
+	<h5> Last modified on
+		Dec 26, 2017
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			6 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>We want in this section to describe the default merge functions used by the <code>m</code> component factory, when no such merge function is supplied by the user.</p>
+
+<h2 id="dom-merge">DOM merge</h2>
+
+<p>The <code>DOM</code> merge function relating to <code>m :: ComponentDef -&gt; Settings -&gt; [ParentComponent, Array&lt;ChildComponent&gt;])</code> has the following signature : <code>DOMDefaultMerge :: Nullable&lt;ParentDOMSink&gt;, Array&lt;DOMSink&gt;, Settings</code>, where :</p>
+
+<ul>
+<li><code>ParentDOMSink</code> encapsulates the DOM produced by <code>ParentComponent</code></li>
+<li><code>Array&lt;DOMSink&gt;</code> encapsulates the DOM produced by the children<code>Array&lt;ChildComponent&gt;</code></li>
+<li><code>Settings</code> follows the usual inheritance rules of settings through the component tree</li>
+</ul>
+
+<p>If the user does not supply a merge function through the <code>ComponentDef</code> parameter, the default one is used. The default merge function by default append the DOM trees produced by the children at the end of the parent DOM tree. This behaviour can however be altered if the parent component explicitly makes use of named slots. We proceed with describing those two cases.</p>
+
+<h3 id="regular-dom-merge">Regular DOM merge</h3>
+
+<p>Let&rsquo;s consider <code>m({}, {}, [ParentComponent, [SiblingComponent1, SiblingComponent2]</code> with the following DOMs being produced :</p>
+
+<ul>
+<li><p>ParentComponent</p>
+
+<pre><code class="language-html">&lt;div id='#parent'&gt;
+&lt;h2&gt; This is some content included in the parent component's DOM 
+&lt;/h2&gt;
+&lt;/div&gt;
+</code></pre></li>
+
+<li><p>SiblingComponent1</p>
+
+<pre><code class="language-html">&lt;div id='#sibling1'&gt;
+&lt;span&gt; first sibling component's DOM &lt;/span&gt;
+&lt;/div&gt;
+</code></pre></li>
+
+<li><p>SiblingComponent2</p>
+
+<pre><code class="language-html">&lt;div id='#sibling2'&gt;
+&lt;span&gt; second sibling component's DOM &lt;/span&gt;
+&lt;/div&gt;
+</code></pre></li>
+</ul>
+
+<p>The merged result will be similar to :</p>
+
+<pre><code class="language-html">&lt;div id='#parent'&gt;
+  &lt;h2&gt; This is some content included in the parent component's DOM 
+  &lt;/h2&gt;
+  &lt;div id='#sibling1'&gt;
+    &lt;span&gt; first sibling component's DOM &lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div id='#sibling2'&gt;
+    &lt;span&gt; second sibling component's DOM &lt;/span&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+
+<p><strong>NOTE</strong> : for the edge case when the parent component does not have a selector for the children to be included within (for instance if it is a text node), a dummy <code>div</code> selector is created, whose first children is the text node, and next children are the children DOM trees. For more details look at the tests.</p>
+
+<h3 id="slotted-dom-merge">Slotted DOM merge</h3>
+
+<p>The slotted DOM merge is a powerful, albeit complex functionality which allows to build the parent DOM from the children DOM according to a redistribution logic specified by a <a href="https://developers.google.com/web/fundamentals/architecture/building-components/shadowdom#slots">slot mechanism</a> similar to the one used for <a href="https://developers.google.com/web/fundamentals/architecture/building-components/">Web Components</a>.</p>
+
+<p>Let&rsquo;s assume :</p>
+
+<ol>
+<li>parent component DOM</li>
+</ol>
+
+<pre><code class="language-html">&lt;div class=&quot;element-details-template&quot;&gt;
+  &lt;style&gt;
+  details {font-family: &quot;Open Sans Light&quot;,Helvetica,Arial}
+  .name {font-weight: bold; color: #217ac0; font-size: 120%}
+  h4 { margin: 10px 0 -8px 0; }
+  h4 span { background: #217ac0; padding: 2px 6px 2px 6px }
+  h4 span { border: 1px solid #cee9f9; border-radius: 4px }
+  h4 span { color: white }
+  .attributes { margin-left: 22px; font-size: 90% }
+  .attributes p { margin-left: 16px; font-style: italic }
+  &lt;/style&gt;
+  &lt;div class=&quot;.element-details&quot;&gt;
+    &lt;div class=&quot;.element-details__summary&quot;&gt;
+      &lt;span&gt;
+        &lt;code class=&quot;name&quot;&gt;&amp;lt;&lt;slot name=&quot;element-name&quot;&gt;NEED NAME&lt;/slot&gt;&amp;gt;&lt;/code&gt;
+        &lt;i class=&quot;desc&quot;&gt;&lt;slot name=&quot;description&quot;&gt;NEED DESCRIPTION&lt;/slot&gt;&lt;/i&gt;
+      &lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;attributes&quot;&gt;
+      &lt;h4&gt;&lt;span&gt;Attributes&lt;/span&gt;&lt;/h4&gt;
+      &lt;slot name=&quot;attributes&quot;&gt;&lt;p&gt;None&lt;/p&gt;&lt;/slot&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;hr&gt;
+&lt;/div&gt;
+</code></pre>
+
+<p>That parent DOM has several features:</p>
+
+<ul>
+<li>it uses <code>&lt;slot&gt;</code> and its name attribute to make three named slots:
+
+<ul>
+<li><code>&lt;slot name=&quot;element-name&quot;&gt;</code></li>
+<li><code>&lt;slot name=&quot;description&quot;&gt;</code></li>
+<li><code>&lt;slot name=&quot;attributes&quot;&gt;</code></li>
+</ul></li>
+<li>the named slots are wrapped within regular HTML elements.</li>
+</ul>
+
+<p>Let&rsquo;s consider now the slot contents :</p>
+
+<ol>
+<li>child with slot <code>element-name</code></li>
+</ol>
+
+<pre><code class="language-html"> &lt;span slot=&quot;element-name&quot;&gt;slot&lt;/span&gt;
+</code></pre>
+
+<ol>
+<li>child with slot <code>description</code></li>
+</ol>
+
+<pre><code class="language-html">&lt;span slot=&quot;description&quot;&gt;A placeholder inside a web
+    component that users can fill with their own markup,
+    with the effect of composing different DOM trees
+    together.&lt;/span&gt;
+</code></pre>
+
+<ol>
+<li>child with slot <code>attributes</code></li>
+</ol>
+
+<pre><code class="language-html">&lt;dl slot=&quot;attributes&quot;&gt;
+    &lt;dt&gt;name&lt;/dt&gt;
+    &lt;dd&gt;The name of the slot.&lt;/dd&gt;
+&lt;/dl&gt;
+</code></pre>
+
+<p>The merged DOM should hence be :</p>
+
+<pre><code class="language-html">&lt;div class=&quot;element-details-template&quot;&gt;
+  &lt;style&gt;
+  .element-details {font-family: &quot;Open Sans Light&quot;,Helvetica,Arial}
+  .name {font-weight: bold; color: #217ac0; font-size: 120%}
+  h4 { margin: 10px 0 -8px 0; }
+  h4 span { background: #217ac0; padding: 2px 6px 2px 6px }
+  h4 span { border: 1px solid #cee9f9; border-radius: 4px }
+  h4 span { color: white }
+  .attributes { margin-left: 22px; font-size: 90% }
+  .attributes p { margin-left: 16px; font-style: italic }
+  &lt;/style&gt;
+  &lt;div class=&quot;.element-details&quot;&gt;
+    &lt;div class=&quot;.element-details__summary&quot;&gt;
+      &lt;span&gt;
+        &lt;code class=&quot;name&quot;&gt;&amp;lt;
+           &lt;span slot=&quot;element-name&quot;&gt;slot&lt;/span&gt;
+        &lt;/code&gt;
+        &lt;i class=&quot;desc&quot;&gt;
+          &lt;span slot=&quot;description&quot;&gt;A placeholder inside a web
+    component that users can fill with their own markup,
+    with the effect of composing different DOM trees
+    together.&lt;/span&gt;
+        &lt;/i&gt;
+      &lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;attributes&quot;&gt;
+      &lt;h4&gt;&lt;span&gt;Attributes&lt;/span&gt;&lt;/h4&gt;
+      &lt;dl slot=&quot;attributes&quot;&gt;
+        &lt;dt&gt;name&lt;/dt&gt;
+        &lt;dd&gt;The name of the slot.&lt;/dd&gt;
+      &lt;/dl&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;hr&gt;
+&lt;/div&gt;
+</code></pre>
+
+<p>In short, the general case is that the parent defines some slots by name, and replace those slots by the corresponding DOM content found in the children DOM&rsquo;s slots. In this example, all slots are filled, as they can all be found in the children DOMs.</p>
+
+<p>When a slot cannot be filled in by a corresponding children DOM (the children DOM simply does not define content for that slot), the slotted content of the parent is used as default. The following describes that behaviour, with the same parent component, but this time children components which will not define content for the <code>attributes</code> slot.</p>
+
+<ol>
+<li>child with slot <code>element-name</code></li>
+</ol>
+
+<pre><code class="language-html"> &lt;span slot=&quot;element-name&quot;&gt;template&lt;/span&gt;
+</code></pre>
+
+<ol>
+<li>child with slot <code>description</code></li>
+</ol>
+
+<pre><code class="language-html">&lt;span slot=&quot;description&quot;&gt;A mechanism for holding client-
+    side content that is not to be rendered when a page is
+    loaded but may subsequently be instantiated during
+    runtime using JavaScript.&lt;/span&gt;
+</code></pre>
+
+<p>In that case, the merged DOM should be :</p>
+
+<pre><code class="language-html">&lt;div class=&quot;element-details-template&quot;&gt;
+  &lt;style&gt;
+  .element-details {font-family: &quot;Open Sans Light&quot;,Helvetica,Arial}
+  .name {font-weight: bold; color: #217ac0; font-size: 120%}
+  h4 { margin: 10px 0 -8px 0; }
+  h4 span { background: #217ac0; padding: 2px 6px 2px 6px }
+  h4 span { border: 1px solid #cee9f9; border-radius: 4px }
+  h4 span { color: white }
+  .attributes { margin-left: 22px; font-size: 90% }
+  .attributes p { margin-left: 16px; font-style: italic }
+  &lt;/style&gt;
+  &lt;div class=&quot;.element-details&quot;&gt;
+    &lt;div class=&quot;.element-details__summary&quot;&gt;
+      &lt;span&gt;
+        &lt;code class=&quot;name&quot;&gt;&amp;lt;
+           &lt;span slot=&quot;element-name&quot;&gt;template&lt;/span&gt;
+        &lt;/code&gt;
+        &lt;i class=&quot;desc&quot;&gt;
+          &lt;span slot=&quot;description&quot;&gt;A mechanism for holding client-
+    side content that is not to be rendered when a page is
+    loaded but may subsequently be instantiated during
+    runtime using JavaScript.&lt;/span&gt;
+        &lt;/i&gt;
+      &lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;attributes&quot;&gt;
+      &lt;h4&gt;&lt;span&gt;Attributes&lt;/span&gt;&lt;/h4&gt;
+      &lt;slot name=&quot;attributes&quot;&gt;&lt;p&gt;None&lt;/p&gt;&lt;/slot&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;hr&gt;
+&lt;/div&gt;
+</code></pre>
+
+<h3 id="rules">Rules</h3>
+
+<ul>
+<li>there can be several children defining content for one given slot. For example, this is a valid proposition :</li>
+</ul>
+
+<pre><code class="language-html">&lt;fancy-tabs&gt;
+  &lt;button slot=&quot;title&quot;&gt;Title&lt;/button&gt;
+  &lt;button slot=&quot;title&quot; selected&gt;Title 2&lt;/button&gt;
+  &lt;button slot=&quot;title&quot;&gt;Title 3&lt;/button&gt;
+  &lt;section&gt;content panel 1&lt;/section&gt;
+  &lt;section&gt;content panel 2&lt;/section&gt;
+  &lt;section&gt;content panel 3&lt;/section&gt;
+&lt;/fancy-tabs&gt;
+
+&lt;!-- Using &lt;h2&gt;'s and changing the ordering would also work! --&gt;
+&lt;fancy-tabs&gt;
+  &lt;h2 slot=&quot;title&quot;&gt;Title&lt;/h2&gt;
+  &lt;section&gt;content panel 1&lt;/section&gt;
+  &lt;h2 slot=&quot;title&quot; selected&gt;Title 2&lt;/h2&gt;
+  &lt;section&gt;content panel 2&lt;/section&gt;
+  &lt;h2 slot=&quot;title&quot;&gt;Title 3&lt;/h2&gt;
+  &lt;section&gt;content panel 3&lt;/section&gt;
+&lt;/fancy-tabs&gt;
+</code></pre>
+
+<p>where the <code>fancy-tabs</code> parent component is defined as :</p>
+
+<pre><code class="language-html">&lt;div id=&quot;tabs&quot;&gt;
+   &lt;slot id=&quot;tabsSlot&quot; name=&quot;title&quot;&gt;&lt;/slot&gt;
+&lt;/div&gt;
+&lt;div id=&quot;panels&quot;&gt;
+   &lt;slot id=&quot;panelsSlot&quot;&gt;&lt;/slot&gt;
+&lt;/div&gt;
+</code></pre>
+
+<p>In such a case, the children DOM&rsquo;s are appended one after the other. The corresponding merge DOM would then be :</p>
+
+<pre><code class="language-html">    &lt;div id=&quot;tabs&quot;&gt;
+      &lt;slot id=&quot;tabsSlot&quot; name=&quot;title&quot;&gt;
+        &lt;button slot=&quot;title&quot;&gt;Title&lt;/button&gt;
+        &lt;button slot=&quot;title&quot; selected&gt;Title 2&lt;/button&gt;
+        &lt;button slot=&quot;title&quot;&gt;Title 3&lt;/button&gt;
+      &lt;/slot&gt;
+    &lt;/div&gt;
+    &lt;div id=&quot;panels&quot;&gt;
+      &lt;slot id=&quot;panelsSlot&quot;&gt;
+        &lt;section&gt;content panel 1&lt;/section&gt;
+        &lt;section&gt;content panel 2&lt;/section&gt;
+        &lt;section&gt;content panel 3&lt;/section&gt;
+      &lt;/slot&gt;
+    &lt;/div&gt;
+</code></pre>
+
+<ul>
+<li>an <q>unnamed</q> slot can be used to enclose the children DOMs which are not assigned a slot</li>
+</ul>
+
+<p>See same previous example as a demo of this (<code>&lt;slot id=&quot;panelsSlot&quot;&gt;</code>). Note that using this feature disable the standard DOM merge mechanism described previously.</p>
+
+<ul>
+<li><p>Children DOM contents which are not assigned to any slot (including the unnamed slot) are merged into the parent&rsquo;s DOM using the mechanism described in the <code>standard merge</code> section.</p></li>
+
+<li><p><del>If there&rsquo;s more than one unnamed or named slots, the corresponding children content will be replicated in all corresponding slots.</del></p>
+
+<ul>
+<li><del>this is a difference with the web component slot mechanism where if there&rsquo;s more than one default slot, the first is used.</del></li>
+</ul></li>
+</ul>
+
+<h3 id="vtree-transcription">vTree transcription</h3>
+
+<p>In a <code>vNode</code> context, <code>&lt;slot name=&quot;element-name&quot;&gt;NEED NAME&lt;/slot&gt;</code> would correspond to <code>{children : [none], sel:'div', data : {slot : 'attributes'}}</code>, where <code>none</code> is the <code>vNode</code> corresponding to <code>&lt;p&gt;None&lt;/p&gt;</code>.</p>
+
+<h3 id="edge-cases">Edge cases</h3>
+
+<p>cf. tests</p>
+
+<h1 id="references">References</h1>
+
+<ul>
+<li><a href="https://developers.google.com/web/fundamentals/architecture/building-components/shadowdom">Shadow DOM v1: Self-Contained Web Components</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/slot"><code>&lt;slot&gt;</code> MDN</a></li>
+</ul>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/actiondriver/">
+            <img class="icon-text" src="/img/prev.svg"/>ActionDriver</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/pipe/">Pipe<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a>
+<ul>
+<li><a href="#dom-merge">DOM merge</a>
+<ul>
+<li><a href="#regular-dom-merge">Regular DOM merge</a></li>
+<li><a href="#slotted-dom-merge">Slotted DOM merge</a></li>
+<li><a href="#rules">Rules</a></li>
+<li><a href="#vtree-transcription">vTree transcription</a></li>
+<li><a href="#edge-cases">Edge cases</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#references">References</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

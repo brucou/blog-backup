@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>A componentization model for cyclejs - Technuflexions</title>
+
+		<meta name="description" content="Background A component framework or platform provides both a systematic method to construct components, possibly from other components (namely dealing with interfacing, binding and interactions between components), and a systematic interface between component and the component framework, by which components can be introspected, instantiated, executed, destroyed (namely dealing with component lifecycle)1.
+The first figure shows a classification framework for software component models, emphasizing the miscellaneous responsibilities of a component model.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>A componentization model for cyclejs</h1>
+	<h5>
+		<time datetime="2017-07-07 00:00:00 &#43;0000 UTC">Jul 07, 2017</time>
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/components">components</a>
+			18 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+    
+
+<h1 id="background">Background</h1>
+
+<p>A component framework or platform provides both a systematic method to construct components, possibly from other components (namely dealing with interfacing, binding and interactions between components), and a systematic interface between component and the component framework, by which components can be introspected, instantiated, executed, destroyed (namely dealing with component lifecycle)<sup class="footnote-ref" id="fnref:classification"><a rel="footnote" href="#fn:classification">1</a></sup>.</p>
+
+<p>The first figure shows a classification framework for software component models, emphasizing the miscellaneous responsibilities of a component model. We will not examine here the third point(extra-functional properties).</p>
+
+<p><img src="https://i.imgur.com/9yziyvB.png" alt="Classification framework for software component models" /></p>
+
+<p>The second figure illustrates construction mechanisms linking components to each other and to the component framework.</p>
+
+<p><img src="https://i.imgur.com/mLozPJ4.png" alt="Component framework" /></p>
+
+<p>The third figure illustrates the two key ways to interface components : operational-based interface, or port-based interface.</p>
+
+<p><img src="https://i.imgur.com/t84fq4c.png" alt="Interface specification" /></p>
+
+<p>We will thereafter expose our proposal for a componentization model for implementing reactive systems, based on <code>rxjs</code> as a streaming technology, and <code>cyclejs</code> as an architecture and framework.</p>
+
+<h1 id="proposed-component-framework">Proposed component framework</h1>
+
+<p>We have seen <a href="/posts/user-interfaces-as-reactive-systems/">previously</a> that to implement a reactive system we need :</p>
+
+<ul>
+<li>a reactive function $f$ linking actions to events, with $actions = f(events)$, where actions
+and events are represented as streams</li>
+<li>an interface with the systems through which actions intended by the user must be performed</li>
+<li>an interface by which the reactive system receives its events</li>
+</ul>
+
+<p>Our component framework will be inspired by <code>cyclejs</code> framework. A component will be a procedure <code>f :: Sources -&gt; Settings -&gt; Sinks</code>, where :</p>
+
+<ul>
+<li><code>Sources</code> contains any necessary accessor/factory methods to the internal state of the framework and relevant events</li>
+<li><code>Settings</code> represents the parameterization concern of the component behaviour</li>
+<li><code>Sinks</code> holds the computed action representations in response to incoming events</li>
+</ul>
+
+<p>Note that $f$ here is not in general a pure function, as typically $f$ is accessing the external world to read events from it. We will still call $f$ the reactive function, by abuse of language. It would be easy to write <code>f = compose(g, h)</code> where <code>h :: Sources -&gt; Settings -&gt; Events</code> and <code>g :: Events -&gt; Settings -&gt; Sinks</code>, so that <code>g</code> is a pure function. We however follow <code>cyclejs</code> choice here and accept an impure reactive function, for reasons we will detail thereafter.</p>
+
+<p>The component framework exposes an interface to its components by which it receives the actions to be performed : <code>Sinks :: HashMap&lt;SinkName, Sink&gt;</code>, is to be matched with <code>Drivers :: HashMap&lt;SinkName, Driver&gt;</code>, where a <code>Driver :: Sink -&gt; Source</code> takes responsibility for the <strong>execution</strong> of actions passed through the <strong>matching</strong> sink, and passing up the eventual results of such actions as an event into the reactive system.</p>
+
+<p>The component framework also exposes the interface which the reactive system receives its events : <code>Sources :: HashMap&lt;SourceName, Source&gt;</code>, where <code>Source</code> is anything presenting an interface to access <strong>events</strong> and <strong>state</strong> from/of external systems of interest. <code>Source</code> can, for instance, be a parameterizable event factory (events obtained from DOM listeners, etc.). <code>SourceName</code> is a moniker uniquely referencing the corresponding source of events.</p>
+
+<p>The component framework connects together identical <code>SourceName</code> and <code>SinkName</code>, so that a driver corresponding to a given <code>SinkName</code> will output the result of the actions it executes as events with the same moniker as a <code>SourceName</code> (in figure thereafter, represented with same colour).</p>
+
+<p><img src="/img/graphs/cycle_component_framework.png" alt="cyclejs framework" /></p>
+
+<p>In the context of this component framework, component composition is simply function composition, with message-passing/dataflow through streams and a port-based interface emulated by the monikers <code>SinkName</code>, <code>SourceName</code>.</p>
+
+<p>We will review in what follows parallel composition, sequential composition, parametricity and genericity, all of which being concerns incorporated into what we term component combinators.</p>
+
+<h2 id="parallel-composition">Parallel composition</h2>
+
+<p>Parallel composition in our context is based on expressing the reactive function $f$ as the combination of functions, each of which captures a smaller and ideally isolated part of the overall $f$&rsquo;s complexity.</p>
+
+<p>The bet is that :</p>
+
+<ul>
+<li>the smaller functions will lead to lower complexity,</li>
+<li>that complexity will be low enough to be addressed satisfactorily at the smaller function level,</li>
+<li>$f$ can be recombined in a systematic way without loss in specification from the smaller functions</li>
+<li>it will be possible to encapsulate a large class of reactive subsystems into reusable generic components, which can then be parameterized to reflect the targeted reactive subsystem at hand.</li>
+</ul>
+
+<p>In short, we want a <code>combine :: Array&lt;Component&gt; -&gt; Component</code>, where :</p>
+
+<ul>
+<li>$f$, the reactive function is a <code>Component</code></li>
+<li>$f$ can be obtained by applying <code>combine</code> to other reactive functions
+
+<ul>
+<li>$f = combine([f_1, f_2, f_3&hellip;])$</li>
+</ul></li>
+</ul>
+
+<p>Note that :</p>
+
+<ul>
+<li>the <code>combine</code> function can take any extra arguments, in which case, by uncurrying, it is always possible to come back the canonical <code>combine</code> form shown previously.</li>
+<li>As any component used to derive another component can itself have been derived, parallel composition naturally leads to the manipulation of component trees</li>
+</ul>
+
+<p>There are usually many ways to perform that decomposition. The idea in every case is to reach functions $f_{m.n&hellip;}$ whose complexity is easily manageable. If we understand that part of complexity of such functions emanates from the top-level $f$, while another part stems from the interaction of $f_{m.n&hellip;}$s with the larger reactive system, we see that there is a sweet spot where the function is &lsquo;small&rsquo; enough to be manageable but not too small so it has to be coupled with many other functions to achieve a given functionality (coupling increases complexity).</p>
+
+<h2 id="sequential-composition">Sequential composition</h2>
+
+<p>We seek <code>combine :: Array&lt;Component&gt; -&gt; Component</code>, where :</p>
+
+<ul>
+<li>$combine([f]) = f$</li>
+<li>$combine([f, g])$
+
+<ul>
+<li>only defined when f and g have at least one matching output/input</li>
+<li>connect input of $g$ to output of $f$</li>
+</ul></li>
+</ul>
+
+<p>As a side effect, sequential composition can be used for interface adaptation purposes, like in
+$combine([adaptInput, f, adaptOutput])$.</p>
+
+<h2 id="genericity-parametricity-and-reuse">Genericity, parametricity and reuse</h2>
+
+<p>At the core of reusability of components is the ability to design components implementing a behaviour which is generic enough to cover a large set of contexts, and parameterizable enough to be customized at design-time or run-time without modification.</p>
+
+<p>In this effort, as previously introduced, we will address the parameterization concern with a specific parameter (<code>:: Settings</code>) passed to the reusable component factories or combinators. For instance a <code>CheckBox</code> component implementing the generic reactive system made of a checkbox which when clicked emits an action including its checked/unchecked state,  could be written to be parameterized in appearance/style (allowing to customize the checkbox background for example) :</p>
+
+<pre><code class="language-javascript">export function CheckBox(sources, settings) {
+  const { checkBox: { label:_label, namespace, isChecked } } = settings;
+  const checkBoxSelector = '.' + [defaultTo(defaultNamespace, namespace), ++counter].join('-');
+  const __label = defaultTo('', _label);
+
+  assertContract(isCheckBoxSettings, [settings.checkBox], `CheckBox : Invalid check box settings! : ${format(settings.checkBox)}`)
+
+  const events = {
+    'change' : sources[DOM_SINK].select(checkBoxSelector).events('change')
+      .map(ev =&gt; ev.target.checked)
+  };
+
+  return {
+    [DOM_SINK]: $.of(div('.checkbox', [
+      label(labelSelector, [
+                input([inputSelector, checkBoxSelector].join(''), {
+                  &quot;attrs&quot;: {
+                    &quot;type&quot;: &quot;checkbox&quot;,
+                    &quot;checked&quot;: isChecked,
+                  }
+                }),
+                // NOTE : !! snabbdom overload selection algorithm fails if last input is undefined
+                span(checkBoxTextSelector, __label)
+              ])
+    ])),
+    isChecked$: events.change
+  }
+}
+
+</code></pre>
+
+<h2 id="component-combinators">Component combinators</h2>
+
+<p>A component combinator is a function of the type <code>Combinator :: Settings -&gt; Array&lt;Component&gt; -&gt; Component</code>. The signature is basically the formerly presented <code>combine</code> signature to which <code>Settings</code> have been added to allow to parameterize the behaviour of the combinator.</p>
+
+<p>Those combinators are themselves specialization of a generic combinator, here called <code>m</code>, with <code>m :: CombinatorSpecs -&gt; Settings -&gt; Array&lt;Component&gt; -&gt; Component</code>, which can also be written <code>m :: CombinatorSpecs -&gt; Combinator</code>. That is, one can see <code>m</code> both as a combinator factory, or a component factory.</p>
+
+<p>We have so far implemented a list of combinators which allow to realize the following composition :</p>
+
+<ul>
+<li>merge reactive functions</li>
+<li>switch reactive functions according to events</li>
+<li>recursively switching reactive functions according to route (i.e. nested routing)</li>
+<li>merge a list of reactive function based on a template and incoming array</li>
+<li>extend a reactive function to process additional events or add extra parameterization</li>
+<li>build a set of reactive functions into a state machine</li>
+<li>sequential composition of &ldquo;reactive&rdquo; functions (in quotes here, because the
+sequentially composed functions are not necessarily reactive functions in the sense that some may not compute actions but intermediary results which serve to compute actions)</li>
+</ul>
+
+<h2 id="example">Example</h2>
+
+<p>We will take as target application an example application from the book <code>Mastering Angular2 components</code>.</p>
+
+<p><img src="/img/screens/main_screen_ang2_example.png" alt="Example application's main screen" /></p>
+
+<p>That screen is broken down in non-overlapping regions. For each region, a component is assigned the responsibility to implement the corresponding reactive system. For instance, the menu on the left is taken care of by <code>SidePanel</code>, while the right part is handled by <code>MainPanel</code>. At a high-level, we have the following component tree, where we can see a few component combinators (injecting remote data to be used in that branch of the tree, and adding the application container) :</p>
+
+<p><img src="/img/graphs/App_Component_Tree_Direct_Lowest_Detail.png" alt="First level of decomposition" /></p>
+
+<p>Iterating on that process, we reach a more detailed component tree, with components catering to more and more specific concerns. The following picture shows how the main panel has been further broken down into smaller components, linked through combinators :</p>
+
+<p><img src="/img/graphs/App_Component_Tree_ProjectTaskList_with_leaves_out_flat.png" alt="Detailed component tree with combinators" /></p>
+
+<p>As apparent from the figure, the <code>MainPanel</code> handles three routes, one of which corresponds to
+the <code>Project</code> component, which, among other things, handles a <code>ProjectsTaskList</code>.</p>
+
+<p>That <code>ProjectsTaskList</code> itself is implemented as follows:</p>
+
+<p><img src="/img/graphs/App_Component_Tree_ProjectTaskList_with_leaves_flat.png" alt="Detailed component tree with combinators" /></p>
+
+<p><img src="/img/graphs/legend.jpg" style="width:30%"></img></p>
+
+<p>From the breakdown of the components, one can easily gather that the <code>ProjectsTaskList</code> is a
+<code>TaskList</code>, which is a list (<code>ListOf</code>) of <code>Task</code>, read remotely (through <code>InjectSourcesAndSettings</code>) and updated for each change of that list (<code>ForEach</code>), and displayed within a <code>TaskListContainer</code>. Additionally,
+it displays a <code>ToggleButton</code> next to a <code>EnterTask</code> component, all enclosed in a
+<code>ProjectTaskListContainer</code>.</p>
+
+<h1 id="characteristics-of-a-good-decomposition">Characteristics of a good decomposition</h1>
+
+<p>A good decomposition should :</p>
+
+<ul>
+<li>decide on the ideal granularity of the decomposition</li>
+<li>identify generic reusable components</li>
+<li>exhibit high cohesion and loose coupling</li>
+</ul>
+
+<h2 id="granularity-of-decomposition">Granularity of decomposition</h2>
+
+<p>As previously seen, breaking down the system in loosely coupled parts results in the individual parts having lower complexity. The right level of granularity comes from the tradeoff between fine-grain componentization (large number of small and relatively simple components) and coarse grain componentization (small number of large and relatively complex components). On the one hand, finer grain components are simpler to implement. On the other hand, decomposition into a large number of fine-grain components makes the interactions among components voluminous. In that case, the corresponding increase in complexity may overweight the decrease in complexity experienced in the individual components, nullifying the benefits of componentization.</p>
+
+<p>Additionally there might be non-functional costs to decomposition which becomes non-neglectable at a fine-grain level (performance, resource consumption, etc.). Hence the optimal granularity of a decomposition must be assessed on a case-by-case basis.</p>
+
+<p>Hierarchical decomposition (where components are themselves composed from other components, termed as children components) helps alleviate somewhat issues from fine-grain decomposition, by containing the increase in interaction between components (interaction is restricted to the scope of the parent component). As we saw before, this hierarchical decomposition gives birth to a component tree, where each parent component (node) is connected to its children (subtrees).</p>
+
+<p>A system with hierarchical modularity can be viewed at different granularities, from coarser grain at the top of the hierarchy to a finer grain at the bottom. The goal is to constrain the interacting modules at each level to an understandable number while avoiding constraints linked to the total number of components.</p>
+
+<p>System design is top-down: first the coarse-grain modularity is established, and at each successive phase the next level of hierarchy is established by decomposition of the modules at the next higher level. System implementation, on the other hand, is bottom-up: Only the modules at the leaves of a hierarchy are actually implemented, while each module above is integrated from existing modules below, starting at the bottom.</p>
+
+<p>The <a href="#example">example</a> provided allows to illustrate the additional point :</p>
+
+<ul>
+<li>implementation can be performed by successive or parallel refinements. In the example, one can
+find in green components which are still big and pending breakdown. While focusing on the rest
+of the implementation, a developer can use a placeholder component (<code>DummyComponent</code>).
+Alternatively, the component in question can be safely delegated to another developer or another
+team</li>
+</ul>
+
+<h2 id="generic-components-vs-ad-hoc-components">Generic components vs. ad-hoc components</h2>
+
+<p>In the frame of reactive systems, two main drivers lead decomposition :</p>
+
+<ul>
+<li>reusing already existing components
+
+<ul>
+<li>in the context of reactive system, this mostly involves reusing common presentational/behavioural functionalities : tabbed groups, cards, breadcrumbs, etc. An existing library of reusable components can be leveraged to that effect. Those components however have to be customizable per the actions triggered by user events, or offer an interface decoupled from such actions, i.e. decoupled from the domain at hand.</li>
+</ul></li>
+<li>separating concerns
+
+<ul>
+<li>typically a graphical application will have events belonging to a specific region of the screen. An obvious divide-and-conquer strategy is to break down the application in such independent regions and assign a component to each of those. A component could for instance handle the navigation concern of the application, while another might handle displaying a domain object and possible interactions with that object, with yet another handling notifications from external systems to the application.</li>
+</ul></li>
+</ul>
+
+<p>It is in addition worthy to identify domain-specific components, should they arise from the application implementation. This might be for instance in the case of a trading application, components which display value of a stock in real-time.</p>
+
+<p>The <a href="#example">example</a> provided allows to illustrate those points by emphasizing and
+distinguishing generic UI component from ad-hoc components from container components.</p>
+
+<h1 id="cross-cutting-concerns">Cross-cutting concerns</h1>
+
+<h2 id="state-management">State management</h2>
+
+<p>We distinguish 3 types of state :</p>
+
+<ol>
+<li>Locally persisted state
+
+<ul>
+<li>copy of remote data</li>
+<li>locally generated data
+
+<ul>
+<li>browser state
+
+<ul>
+<li>route</li>
+</ul></li>
+<li>app state</li>
+<li>session state</li>
+<li>page state
+
+<ul>
+<li>ui (scrollbar position, checkbox state, etc.)</li>
+<li>user scripts</li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li>Remotely persisted state
+
+<ul>
+<li>domain data</li>
+</ul></li>
+<li>Transient state
+
+<ul>
+<li>Existence is dependent and connected to the lifecycle of the component which originates it</li>
+</ul></li>
+</ol>
+
+<h3 id="locally-persisted-state">Locally persisted state</h3>
+
+<h4 id="fetching-remote-data">Fetching remote data</h4>
+
+<p>Remote data is fetched from its remote source via the corresponding driver, and becomes locally
+persisted data. The fetch can be a snapshot (no synchronisation with the source), or act like a
+live query (updating itself whenever the source updates itself). Using streams makes the second
+option easy to handle in the program.</p>
+
+<p>In our example, we use a <code>Query</code> driver to fetch remote data from a repository. That query driver
+ needs a context from which it knows (having been configured prior to its use) how to retrieve
+ the remote data. The <code>Query</code> driver is meant to be used in connection with the application
+ domain. The context here can be anything, but with a complex domain, it could be a bounded
+ context of the domain. For more details about usage of <code>Query</code> driver, please refer to the
+ documentation and related tests.</p>
+
+<p>Depending on the underlying repository, <code>Query</code> can return just a snapshot (normal case), or a
+live query (updating with the remote repository). For instance, with <code>Firebase</code>, <code>Query</code> could
+return a live query. For database which do not support live updates, it is however possible to
+simulate it, by using a <code>Command</code> or <code>Action</code> driver, which notifies of the new value every time
+there is an update on a dependency of the query. Please refer to the <a href="/posts/applying-componentization-to-reactive-systems---sample-application/#step-4-projecttasklist-component">examples</a> to see that
+technique in application.</p>
+
+<h4 id="local-state">Local state</h4>
+
+<p>Local state comes from different sources, originating in different local systems with which the
+user is interacting. Of particular interest are the application, the page, the browser.</p>
+
+<p>Page and browser state can be retrieved by the appropriate interfaces defined by their
+specifications. We will focus here on explaining how to manage local state related to the
+application.</p>
+
+<p>To display a view, we often need pieces of application state that are relevant to that view.
+Because all inputs to our function are to be taken from <code>Sources</code>, it is necessary for the
+framework to initialize <code>Sources</code> so that any piece of application state can be generated from it.
+Typically, this involves copying locally some remotely stored domain data, in addition to
+initializing some application-specific properties at start-up time. State, evolving over time, is
+conveniently modelized as a behaviour.</p>
+
+<p>We recommend to generate the necessary pieces of state as close as possible of where it is needed
+ in the component hierarchy. The figure reproduced thereafter serves to illustrate that point.
+ The top-level state is passed down the hierarchy, where it is massaged into new pieces of state
+ by the <code>InjectSourcesAndSettings</code> combinator. As components <code>A</code> and <code>B</code> needs the same piece of
+ state, that piece of state is injected at the closest common ancestor level. However, only
+ component <code>D</code> requires an additional piece of state, hence that piece of state is injected only
+ for it.</p>
+
+<p><img src="/img/graphs/state_injection.png" alt="state management" /></p>
+
+<p>Note that the new pieces of state computed by the state injection combinator are <strong>added</strong> to
+existing pieces of state, and can be generated from already generated pieces of state, or through
+some factory in <code>Sources</code> (<code>Query</code> driver for instance - see yellow pills for component <code>D</code>).</p>
+
+<h3 id="remotely-persisted-state">Remotely persisted state</h3>
+
+<p>This category includes whatever sits in remote databases, but also in any system of interest (for
+ instance banking information accessible through a gateway interface). Remotely persisted state
+ must be queried, in our architecture, through drivers. We recommend here a custom or customized
+ driver which reflects the peculiarity of the domain at hand. See the <a href="/projects/component-combinators/actiondriver"><code>Action</code></a> and <a href="/projects/component-combinators/querydriver"><code>Query</code></a>
+ driver for an example.</p>
+
+<h3 id="transient-state">Transient state</h3>
+
+<p>This is a piece of state which last only as long as the component that created it in the first
+place. Transient state has no need to kept around and is recreated when needed. As an example, a
+search-as-you-type component might keep track of the length of the search key, and perform search
+ API calls only when that length has reach a minimum value. The length of the entered search key
+ would be transient state. Transient state is generally created through the stream <code>scan</code> operator.</p>
+
+<h2 id="concurrency-management">Concurrency management</h2>
+
+<p>User interfaces are inherently concurrent due to their interfacing with distributed systems. This
+often leads to a host of concurrency problems :</p>
+
+<ul>
+<li>consistency
+
+<ul>
+<li>optimistic updates means that a user interface can fall out of synchronization vs. external
+systems of interest. Possible resynchronization actions may go against already performed
+actions, if the user interface is not carefully designed or implemented</li>
+</ul></li>
+<li>race conditions
+
+<ul>
+<li>when user can input actions faster than the system can execute them, and those actions have
+an effect on the user interface, the user can be led to realize inputs based on stale data.
+This is a cas of read-write concurrency : a value can be read through the user interface, and
+triggered actions can update that value remotely.</li>
+<li>lost update : two user-triggered actions, fired in close sequence, write to the same piece of
+data (write-write concurrency). Under some conditions, one of the two writes can be lost.</li>
+</ul></li>
+<li>order violation
+
+<ul>
+<li>the user enters a sequence of inputs, triggering a sequence of actions. However those actions
+are not executed in the same order than they were generated</li>
+</ul></li>
+<li>missed signal
+
+<ul>
+<li>an action is supposed to return a result, and the user interface awaits for such. However,
+that action result never occurs</li>
+</ul></li>
+</ul>
+
+<p>This is further compounded by modern applications straying away from javascript&rsquo;s single-threaded
+model, with the use of web workers. Some applications are also strongly concurrent (collaborative
+ applications, multi-windows applications, etc.).</p>
+
+<p>For simple synchronization cases, keeping track of concurrent actions execution in some local
+variable(s) may do. For more complex control-flow cases, we offer the <a href="http://brucou.github.io/projects/component-combinators/efsm/"><code>FSM</code> combinator</a>, which implements a state machine, which add control flow capabilities to shared memory. While state machines allow to manage an intermediate level of complexity, it is still a rather low-level tool for concurrency control.<br />
+  A more powerful option would be to make use of a specific DSL for concurrency (like <a href="http://reo.project.cwi.nl/reo/">Reo</a> or <a href="https://mozart.github.io/mozart-v1/doc-1.4.0/tutorial/node8.html#chapter.concurrency">Oz</a>) to express the concurrency requirements separately for the sequential computations. The latter option would however require a different architecture than the one we are presently discussing, and as such, we do not pursue this option.</p>
+
+<p>Also worth mentioning, <code>cyclejs</code> matches each action handler (driver) to a moniker (sink name).
+This brings the following concurrency issue : if two, somehow dependent actions, have to be executed, they must be collected into a single new action. Imagine a user action which leads to some remote data updates, and then a
+change of route. The change of route might happen even if the data update has failed, or before the data
+update is successfully performed. There is no mechanism to differentiate the processing in either
+ case. In short, sinks must represent <strong>independent</strong> actions.</p>
+
+<h2 id="error-management">Error management</h2>
+
+<p>Leaving aside unexpected errors, or exception, there are expected errors which are part of the
+specification of a reactive system. For instance, a user tries to book a trip but the
+reservation system is not responding, or the seat that was available while browser is no longer
+available when booking. Those errors generally prevent the system to move from one state (<code>booking</code>)
+ to another (<code>booked</code>). They can hence use simple state variables in the simplest cases, or a
+ full-fledge state machine (<code>FSM</code> combinator) for complex control flows. The <a href="https://github.com/brucou/component-combinators/tree/master/examples/volunteerApplication">example</a> for <code>FSM</code>
+ illustrates a multi-step application process, where at every step the back-up of application
+ data may fail.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>In summary, reactive systems can be specified by means of a reactive function associating inputs to actions. That reactive function can be obtained by composition of reactive functions from smaller reactive systems.</p>
+
+<p>A good decomposition or factoring is one :</p>
+
+<ul>
+<li>which ensures for each subsystem a reduction in complexity
+(simpler specifications, smaller size of the reactive system, few interactions with other subsystems i.e. intercomponent dependency)</li>
+<li>which can be reassembled in a way that is easy to reason about and trace</li>
+<li>can be parameterized without modification (open-closed principle), so futures changes in the overall reactive system have a higher change to result mainly in changes in parameterization of subsystems.</li>
+<li>highly cohesive, loosely coupled to ensure adaptability<sup class="footnote-ref" id="fnref:adaptability"><a rel="footnote" href="#fn:adaptability">2</a></sup></li>
+</ul>
+
+<p>In our reactive system, <code>cyclejs</code> context: for component construction and interfacing, functions are used, exposing a fixed interface, differentiating parameterization concern and dataflow concern in their inputs; a port metaphor is used for interfacing components; combinators are used for parallel and sequential composition; component lifecycle is handled by the framework which by means of <em>start</em> and <em>stop</em> functionalities.</p>
+
+<p>A range of generic combinators have been defined, which allows to handle a series of concerns,
+including sequential composition, data injection, control flow, routing, iteration, change
+propagation, etc. They are tools which can be used to for concurrency control, state management,
+and error management for the application at hand.</p>
+
+<h1 id="bibliography">Bibliography</h1>
+
+<ul>
+<li><a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.450.9230&amp;rep=rep1&amp;type=pdf">Software Component Models - Component Life Cycle</a></li>
+<li><a href="http://www.win.tue.nl/~johanl/educ/2II45/ADS.09.CBSE.pdf">Component Based Systems - 2011</a></li>
+<li><a href="http://www.myreadingroom.co.in/notes-and-studymaterial/65-dbms/532-concurrency-problems.html">Concurrency Control Problems</a></li>
+<li><a href="http://courses.cs.vt.edu/cs5204/fall10-kafura-BB/Presentations/Concurrency-Issues.pdf">Concurrency Issues Motivation, Problems, Directions</a></li>
+</ul>
+<div class="footnotes">
+
+<hr />
+
+<ol>
+<li id="fn:classification">Cf. <a href="https://pdfs.semanticscholar.org/04ab/304cd8102fdbecd6a41cde9a934e1567b1b3.pdf">A classification framework for software component models</a>
+ <a class="footnote-return" href="#fnref:classification"><sup>[return]</sup></a></li>
+<li id="fn:adaptability">80% of software engineering deals with maintaining or releasing new versions. The cost of redesigning each of such adoptable components (or replacing by a better component) must be minimized.
+ <a class="footnote-return" href="#fnref:adaptability"><sup>[return]</sup></a></li>
+</ol>
+</div>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/posts/componentization-against-complexity/">
+            <img class="icon-text" src="/img/prev.svg"/>Componentization against complexity</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/posts/applying-componentization-to-reactive-systems---sample-application/">Applying componentization to reactive systems : sample application<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#background">Background</a></li>
+<li><a href="#proposed-component-framework">Proposed component framework</a>
+<ul>
+<li><a href="#parallel-composition">Parallel composition</a></li>
+<li><a href="#sequential-composition">Sequential composition</a></li>
+<li><a href="#genericity-parametricity-and-reuse">Genericity, parametricity and reuse</a></li>
+<li><a href="#component-combinators">Component combinators</a></li>
+<li><a href="#example">Example</a></li>
+</ul></li>
+<li><a href="#characteristics-of-a-good-decomposition">Characteristics of a good decomposition</a>
+<ul>
+<li><a href="#granularity-of-decomposition">Granularity of decomposition</a></li>
+<li><a href="#generic-components-vs-ad-hoc-components">Generic components vs. ad-hoc components</a></li>
+</ul></li>
+<li><a href="#cross-cutting-concerns">Cross-cutting concerns</a>
+<ul>
+<li><a href="#state-management">State management</a>
+<ul>
+<li><a href="#locally-persisted-state">Locally persisted state</a>
+<ul>
+<li><a href="#fetching-remote-data">Fetching remote data</a></li>
+<li><a href="#local-state">Local state</a></li>
+</ul></li>
+<li><a href="#remotely-persisted-state">Remotely persisted state</a></li>
+<li><a href="#transient-state">Transient state</a></li>
+</ul></li>
+<li><a href="#concurrency-management">Concurrency management</a></li>
+<li><a href="#error-management">Error management</a></li>
+</ul></li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#bibliography">Bibliography</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+

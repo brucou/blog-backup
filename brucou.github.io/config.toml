@@ -1,0 +1,114 @@
+theme = "manis-hugo-theme"
+baseURL = "http://brucou.github.io/"
+languageCode = "en-us"
+defaultContentLanguage = "en"
+enableRobotsTXT = true
+enableEmoji = true
+title = "Technuflexions"
+copyright = "&copy; 2017 brucou"	# Copyright notice. Note: You can use HTML tag here
+pluralizeListTitles = false
+canonifyURL = true
+disqusShortname = ""                        # Your disqus shortname
+
+paginate = 8
+googleAnalytics = ""      # UA-XXXXXXXX-X
+
+[author]                  # require
+  name = "brucou"
+
+[sitemap]                 # require
+  changefreq = "weekly"
+  priority = 0.5
+  filename = "sitemap.xml"
+
+[[menu.main]]             # config your menu
+  name = "Home"
+  weight = 10
+  identifier = "home"
+  url = "/"
+[[menu.main]]
+  name = "Archives"
+  weight = 20
+  identifier = "archives"
+  url = "/posts/"
+[[menu.main]]
+  name = "Tags"
+  weight = 30
+  identifier = "tags"
+  url = "/tags/"
+[[menu.main]]
+  name = "Categories"
+  weight = 40
+  identifier = "categories"
+  url = "/categories/"
+[[menu.main]]
+  name = "Projects"
+  weight = 50
+  identifier = "projects"
+  url = "/projects/"
+
+[taxonomies]
+  tag = "tags"
+  category = "categories"
+
+[params]
+  debugCSS = true                        # If false, use minified CSS (ui.min.css)
+  debug = false             # If true, load `eruda.min.js`. See https://github.com/liriliri/eruda
+
+  since = "2017"            # Site creation time
+
+  disqusSections = ["blog"]               # list of section support disqus comments
+
+  # 404 Configuration
+  head404 = "Sorry, I can find what you want."
+  sub404 = "Back to <a href='/'>Home</a>."
+
+  latestCount = 5                         # Maximum number of item in Latest Posts or Works
+  dateFmt = "Jan 02, 2006"                # Date format in item list
+
+  # Code Highlighting (HighlightJS)
+  highlightJs = true
+  highlightJsLanguages = [ "go" ]
+  highlightJsStyle = "ocean"
+
+  # site info (option)
+  logoTitle = "Technuflexions"        # default: the title value
+  keywords = ["blog", "programming","functional", "reactive", "user-interface"]
+  description = "Miscellaneous thoughts and research."
+  # tagline = "(re)Flexions about tech" # old
+  tagline = "The embrace of complexity"
+
+  # paginate of archives, tags and categories
+  archive-paginate = 3
+
+  # The date format to use; for a list of valid formats, see https://gohugo.io/functions/format/
+  dateFormatToUse = "2006-01-02"
+
+  # show word count and read time ?
+  moreMeta = true
+
+  # Some global options, you can close something in front matter.
+  toc = true
+  fancybox = true           # see https://github.com/fancyapps/fancybox
+  mathjax = true            # see https://www.mathjax.org/
+  linkToMarkDown = false    # if you config contentCopyright and hugo output .md files.
+  contentCopyright = '<a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a>'
+
+  [params.publicCDN]        # load these files from public cdn
+    enable = false
+    jquery = '<script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>'
+    slideout = '<script src="https://cdn.jsdelivr.net/npm/slideout@1.0.1/dist/slideout.min.js" integrity="sha256-t+zJ/g8/KXIJMjSVQdnibt4dlaDxc9zXr/9oNPeWqdg=" crossorigin="anonymous"></script>'
+    fancyboxJs = '<script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.js" integrity="sha256-XVLffZaxoWfGUEbdzuLi7pwaUJv1cecsQJQqGLe7axY=" crossorigin="anonymous"></script>'
+    fancyboxCss = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.1.20/dist/jquery.fancybox.min.css" integrity="sha256-7TyXnr2YU040zfSP+rEcz29ggW4j56/ujTPwjMzyqFY=" crossorigin="anonymous">'
+
+  [params.social]                                         #
+    email = "mailto:brucou@github.com"
+    stackoverflow = "https://stackoverflow.com/users/3743222/user3743222"
+    github = "https://github.com/brucou"
+
+# Language Configuration
+# Edit this if you want to translate your blog
+#[languages.in]
+#	lang = "..."
+#	languageName = "..."
+#	weight = 1

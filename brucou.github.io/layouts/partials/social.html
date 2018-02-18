@@ -1,0 +1,10 @@
+{{ with .Site.Params.Social.Email }}
+<a href="mailto:{{.}}"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+{{ end }}
+{{ with .Site.Params.Social.Github }}
+<a href="{{.}}"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+{{ end }}
+{{ with .Site.Params.Social.Stackoverflow }}
+<a href="{{.}}"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+{{ end }}
+<a href="{{.Site.RSSLink}}" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>

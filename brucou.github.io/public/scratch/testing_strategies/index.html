@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Testing strategy - Technuflexions</title>
+
+		<meta name="description" content="Testing strategy Given the large size (infinite) of the domain of the function under test, the following hypothesis based on the knowledge of the implementation (gray-box testing) will be used to reduce when deemed convenient the size of the test space :
+ T1 : Independence hypothesis Testing against A | B is sufficient to guarantee behaviour on A x B (independence of A and B) T2 : Continuity hypothesis When we have to test against a set of possible values, we will only test the limit conditions, assuming that passing those tests implies a correct behaviour for the other values.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+	<header><hgroup id="brand">
+	<h1>Testing strategy</h1>
+	<h5>
+		<time datetime="2017-11-02 00:00:00 &#43;0000 UTC">Nov 02, 2017</time>
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			
+			<a href="/tags/testing">testing</a>
+			1 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+	
+
+<h1 id="testing-strategy">Testing strategy</h1>
+
+<p>Given the large size (infinite) of the domain of the function under test, the following
+hypothesis based on the knowledge of the implementation (gray-box testing) will be used to reduce when deemed convenient the size of the test space :</p>
+
+<dl>
+<dt>T1 : Independence hypothesis</dt>
+<dd>Testing against A | B is sufficient to guarantee behaviour on A x B (independence of A and B)</dd>
+<dt>T2 : Continuity hypothesis</dt>
+<dd>When we have to test against a set of possible values, we will only test the limit
+conditions, assuming that passing those tests implies a correct behaviour for the other values.</dd>
+<dt>T3 : Generating set hypothesis</dt>
+<dd>When we are confident that a smaller test set is sufficient to imply the expected
+behaviour for the whole set, we will test only against that smaller test.</dd>
+<dt>T4 : HC/LB faith hypothesis</dt>
+<dd><p>In some cases we simply renounce to test against some values of the test space (80-20 Pareto approach, where we discard the 20% of tests which are high cost and low benefit). This may happen when the values to be tested against are :</p></dd>
+<dd><p>believed to lead to correct behaviour of the function under test (faith)</p></dd>
+<dd><p>believed to have a sufficient low probability of occuring/have an impact that we are willing to absorb</p></dd>
+</dl>
+
+	<nav>
+	
+		<a class="prev-post" href="http://brucou.github.io/scratch/using-hugo-for-my-blog/">
+			<img class="icon-text" src="/img/prev.svg"/>Using Hugo for my blog</a>
+	
+	
+		<a class="next-post" href="http://brucou.github.io/scratch/gui_testing/">GUI testing<img class="icon-text" src="/img/next.svg"/>
+		</a>
+	
+	</nav>
+</article>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+

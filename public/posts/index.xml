@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on Technuflections</title>
+    <link>http://brucou.github.io/posts/</link>
+    <description>Recent content in Posts on Technuflections</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2017 brucou</copyright>
+    <lastBuildDate>Sun, 07 Jan 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://brucou.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Component models for user interfaces implementation - a comparison</title>
+      <link>http://brucou.github.io/posts/component-models-for-user-interfaces-implementation---a-comparison/</link>
+      <pubDate>Sun, 07 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/posts/component-models-for-user-interfaces-implementation---a-comparison/</guid>
+      <description>Abstract In the previous articles, we have presented our proposed component model for user interfaces implementation, which relies on a cyclejs architecture, and is based on streams and reactive programming techniques.
+We will, in this article, compare our proposed component model to Angular2 and React component models1 along a few axes. The comparison will help us identify areas for future work : tooling, testing, and concurrency model.
+Angular2 component model Description A component controls a patch of screen called a view.</description>
+    </item>
+    
+    <item>
+      <title>Applying componentization to reactive systems : sample application</title>
+      <link>http://brucou.github.io/posts/applying-componentization-to-reactive-systems---sample-application/</link>
+      <pubDate>Mon, 16 Oct 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/posts/applying-componentization-to-reactive-systems---sample-application/</guid>
+      <description>Introduction As discussed in a former post, user interfaces are reactive systems, and can be specified through a reactive function which associate events (originating from the user, or the interfaced systems) to actions to be executed. Expressing events, actions, and local state as streams, and expressing local state update also as an action, we have : $actions = f(state, events)$, where $f$ is a pure function. In addition to that function, which expresses the logic of the application, interfaces with the relevant systems must be defined.</description>
+    </item>
+    
+    <item>
+      <title>A componentization model for cyclejs</title>
+      <link>http://brucou.github.io/posts/a-componentization-framework-for-cyclejs/</link>
+      <pubDate>Fri, 07 Jul 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/posts/a-componentization-framework-for-cyclejs/</guid>
+      <description>Background A component framework or platform provides both a systematic method to construct components, possibly from other components (namely dealing with interfacing, binding and interactions between components), and a systematic interface between component and the component framework, by which components can be introspected, instantiated, executed, destroyed (namely dealing with component lifecycle)1.
+The first figure shows a classification framework for software component models, emphasizing the miscellaneous responsibilities of a component model.</description>
+    </item>
+    
+    <item>
+      <title>Componentization against complexity</title>
+      <link>http://brucou.github.io/posts/componentization-against-complexity/</link>
+      <pubDate>Sat, 01 Jul 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/posts/componentization-against-complexity/</guid>
+      <description>The power of abstraction We have previously seen that a reactive system can be described by equations involving a reactive function f such that actions = f(state, events). In theory, the function f is as complex as the specification of the reactive system to implement. In practice, it is often much more so, as dictated by the particular implementation choices made.
+Complexity resists to a uniformally useful definition. However, it is generally accepted that there is a component of complexity which cannot be reduced by any particular technique.</description>
+    </item>
+    
+    <item>
+      <title>User interfaces as reactive systems</title>
+      <link>http://brucou.github.io/posts/user-interfaces-as-reactive-systems/</link>
+      <pubDate>Sun, 11 Jun 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/posts/user-interfaces-as-reactive-systems/</guid>
+      <description>Background As the name suggests, user interfaces allow a user to interface with other systems, with the idea that this interface will present some sought-for advantages vs. direct interaction with the mentioned systems.
+For instance, when the interaction between systems becomes too complex (too many commands or sequences of commands, too many parameters, outputs difficult to exploit in their raw form, etc.), a user interface can help to reduce the cognitive load and the risk of errors on the user side.</description>
+    </item>
+    
+  </channel>
+</rss>

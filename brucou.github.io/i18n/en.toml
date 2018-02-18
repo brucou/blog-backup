@@ -1,0 +1,17 @@
+[latestPost]
+other = "Latest posts"
+
+[latestRest]
+other = "Candidate posts"
+
+[license]
+other = "License"
+
+[toUp]
+other = "Back to Up"
+
+[workHomepage]
+other = "Home Page"
+
+[usedTheme]
+other = "Theme used:"

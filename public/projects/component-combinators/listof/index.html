@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>ListOf - Technuflections</title>
+
+		<meta name="description" content="Motivation The ListOf component allows to execute a single given template component for different values of a parameterizing input. Typically, the values come from an array, and a component is constructed from the execution, for each value of the array, of the given template component parameterized by that value.
+Practically speaking, this is akin to a for loop on an input array. While it is easy for a known array with a given length to execute that loop, the ListOf component abstract out managing cases where the array content or length is not known in advance.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>ListOf</h1>
+	<h5> Last modified on
+		Jan 06, 2018
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			5 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>The <code>ListOf</code> component allows to execute a single given template component for different values of a parameterizing input. Typically, the values come from an array, and a component is constructed from the execution, for each value of the array, of the given template component parameterized by that value.</p>
+
+<p>Practically speaking, this is akin to a <code>for</code> loop on an input array. While it is easy for a known array with a given length to execute that loop, the <code>ListOf</code> component abstract out managing cases where the array content or length is not known in advance. The <code>ListOf</code> component as such combines well with the <code>ForEach</code> component, which can serve as the source of the array from which build the loop.</p>
+
+<p>Note that for each incoming array, the <code>ListOf</code> component is switched off and then on again. This means any non-persisted state local to the component will be reinitialized. In this case this behaviour is not desired, a turn-around is to persist the local state to retrieve it between switches.</p>
+
+<h1 id="api">API</h1>
+
+<h2 id="listof-listofsettings-listemptycomponent-listnonemptycomponent-listofcomponent">ListOf :: ListOfSettings -&gt; [ListEmptyComponent, ListNonEmptyComponent] -&gt; ListOfComponent</h2>
+
+<h3 id="description">Description</h3>
+
+<p>Creates a <code>ListOf</code> component whose behaviour is parameterized via <code>ListOfSettings</code>. Has exactly 2 children components corresponding to two cases :</p>
+
+<ul>
+<li>the source array has no items (empty array) : In that case, the first child component (<code>ListEmptyComponent</code>) is selected as the child component of relevance</li>
+<li>the source array has some items : In that case, the second child component (<code>ListNonEmptyComponent</code>) is selected as the child component of relevance</li>
+</ul>
+
+<p>The parametrization is as follows :</p>
+
+<ul>
+<li>The source array is specified by <code>list</code> property in settings, in the form of a string which is the name of the property to be found in the <code>Settings</code> parameter for the component. That property will hold the source array.</li>
+<li>The parameterizing array item is specified by <code>as</code> property in settings. The component will be executed with the property whose name is specified in <code>as</code> passed in its settings.</li>
+<li>the optional setting property <code>buildActionsFromChildrenSinks</code> has the same function as <code>mergeSinks</code> in the <code>m</code> component factory. It can be :
+
+<ul>
+<li>a function <code>mergeSinks :: makeOwnSinks -&gt; Array&lt;Sinks&gt; -&gt; Settings -&gt; Sinks</code>
+
+<ul>
+<li>that function takes all sinks produced by parent and children components, and reduces them into a single <code>Sinks</code> object</li>
+</ul></li>
+<li>a hashmap <code>mergeSinks :: HashMap&lt;SinkName, SinkMergeFn&gt;</code> with <code>SinkMergeFn :: Sink -&gt; Array&lt;Sink&gt; -&gt; Settings -&gt; Sinks</code>
+
+<ul>
+<li>the hashmap contains for each given sink, a reducing function which takes all such given sink produced by the children component and the parent component (<code>makeOwnSinks</code>) and produces a single reduced sink.</li>
+</ul></li>
+</ul></li>
+<li>the optional setting property <code>actionsMap</code> serves to rename sinks returned by the reducing <code>mergeSinks</code> functions, whether user-configured or the default ones. <code>actionsMap</code> simply maps an input sink name (keys of the object) to an output sink name (values of the object).</li>
+</ul>
+
+<p>The behaviour is as follows :</p>
+
+<ul>
+<li>the source array pointed to by <code>list</code> property is identified and accessed</li>
+<li>If there is no values in the array, the first child component is selected</li>
+<li>If there are values in the array, the second child component is selected</li>
+<li>for all values in the array, the selected child component will receive that value in the property pointed to by <code>as</code> and be executed</li>
+<li>there will be then be as many resulting children components as there are values in the array (except if there were no values in the array, in which case there is only one child component)</li>
+<li>the resulting children components sinks and the parent component sinks are reduced into what will become the <code>ListOf</code> component sinks, according to the reducing logic specified by <code>buildActionsFromChildrenSinks</code> and <code>actionsMap</code> properties</li>
+</ul>
+
+<p><strong>NOTE</strong> : The sinks reducing function <code>buildActionsFromChildrenSinks</code> is called as such as most often, the children component will return intent sinks, which will be transformed into actions sinks by the reducing function. It seems the chosen name illustrates better the purpose than a more generic name like <code>mergeSinks</code>, which is already used in a number of other places and contexts.</p>
+
+<p><strong>NOTE</strong> : The <code>Pipe</code> combinator allows to <a href="https://github.com/cyclejs-community/component-combinators/blob/master/examples/AllInDemo/src/.MainPanel/..Project/...ProjectTaskList/TaskList.js#L65">perform the same</a> conversion of intents sinks into action sinks.</p>
+
+<h3 id="types">Types</h3>
+
+<ul>
+<li><code>ListOfComponent :: Component</code></li>
+<li><code>ListEmptyComponent :: Component</code></li>
+<li><code>ListNonEmptyComponent :: Component</code></li>
+<li><code>ListOfSettings :: Record {</code></li>
+<li><code>list :: SettingsPropertyPath</code> <strong>Mandatory</strong></li>
+<li><code>as :: SettingsPropertyName</code> <strong>Mandatory</strong></li>
+<li><code>buildActionsFromChildrenSinks :: (cf. m)</code> <strong>Optional</strong></li>
+<li><code>actionsMap :: HashMap&lt;SinkName, SinkName&gt;</code> <strong>Optional</strong></li>
+<li><code>}</code></li>
+<li><code>SinkName :: String</code></li>
+</ul>
+
+<h3 id="contracts">Contracts</h3>
+
+<ul>
+<li>for a given configuration of the <code>list</code> setting property, there MUST be a matching property in the same settings object. That property must correspond to an array. That is, if <code>list</code> is <code>'items.info'</code>, then there must be an array in <code>settings.items.info</code>.</li>
+<li>there MUST be exactly two children components</li>
+</ul>
+
+<h1 id="example">Example</h1>
+
+<p>cf. demo and <a href="https://github.com/brucou/component-combinators/blob/master/test/ListOf.specs.js">tests</a></p>
+
+<h1 id="tips">Tips</h1>
+
+<ul>
+<li>Used in combination with <code>ForEach</code>, the <code>ListOf</code> component allows to implement displaying a list of component while allowing for the source array for that list to change dynamically (see demo).
+
+<ul>
+<li>note that the whole list component is switched off and then back on every time a new source array is produced. If one wants to, instead, match a diff of the new and current source array to a diff of the resulting components, that logic has to be implemented in a specific component whose input will be array updates instead of arrays.</li>
+</ul></li>
+<li>The renaming facilities offered by the <code>ListOf</code> configuration allows to reuse existing library components with a slightly different surface API by making the connection between the output of upstreams components with the input of such existing library components.</li>
+</ul>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/foreach/">
+            <img class="icon-text" src="/img/prev.svg"/>ForEach</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/injectsources/">InjectSources<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#api">API</a>
+<ul>
+<li><a href="#listof-listofsettings-listemptycomponent-listnonemptycomponent-listofcomponent">ListOf :: ListOfSettings -&gt; [ListEmptyComponent, ListNonEmptyComponent] -&gt; ListOfComponent</a>
+<ul>
+<li><a href="#description">Description</a></li>
+<li><a href="#types">Types</a></li>
+<li><a href="#contracts">Contracts</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

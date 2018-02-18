@@ -1,0 +1,33 @@
+{{ partial "header" . }}
+<article>
+    <header>{{ partial "title" . }}</header>
+    <div class="post-content">
+    {{ .Content }}
+    </div>
+    <nav>
+        {{ if .PrevInSection }}
+        <a class="prev-post" href="{{.PrevInSection.Permalink}}">
+            <img class="icon-text" src="/img/prev.svg"/>
+            {{- .PrevInSection.Title -}}
+        </a>
+        {{ end }}
+        {{ if .NextInSection }}
+        <a class="next-post" href="{{.NextInSection.Permalink}}">
+            {{- .NextInSection.Title -}}
+            <img class="icon-text" src="/img/next.svg"/>
+        </a>
+        {{ end }}
+    </nav>
+</article>
+{{ if and .Site.Params.toc (ne .Params.toc false) }}
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">{{ .Site.Data.even.default.posts.toc }}</h2>
+    <div class="post-toc-content">
+        {{.TableOfContents}}
+    </div>
+</div>
+{{- end }}
+{{ if in .Site.Params.DisqusSections .Section }}
+{{ partial "disqus" . }}
+{{ end }}
+{{ partial "footer" . }}

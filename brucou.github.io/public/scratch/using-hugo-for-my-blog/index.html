@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Using Hugo for my blog - Technuflexions</title>
+
+		<meta name="description" content="Background Hugo is a static website generator, in the same vein as Jekyll or Hexo. A website can be understood as :
+ a server with the usual concerns (routing, authentication, content delivery, etc.) hosted content (html, js, css, etc.)  A static website generator has, as its mission, the generation of the hosted content from other content. Hence it can be specified by f, a function so that, given a content c, returns the hosted content constituting the target website : f(c) = h.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+	<header><hgroup id="brand">
+	<h1>Using Hugo for my blog</h1>
+	<h5>
+		<time datetime="2017-05-09 08:06:49 &#43;0100 &#43;0100">May 09, 2017</time>
+		-
+			
+			<a href="/tags/hugo">hugo</a>
+			4 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+	
+
+<h1 id="background">Background</h1>
+
+<p>Hugo is a static website generator, in the same vein as Jekyll or Hexo. A website can be understood as :</p>
+
+<ul>
+<li>a server with the usual concerns (routing, authentication, content delivery, etc.)</li>
+<li>hosted content (html, js, css, etc.)</li>
+</ul>
+
+<p>A static website generator has, as its mission, the generation of the hosted content from other content. Hence it can be specified by <code>f</code>, a function so that, given a content <code>c</code>, returns the hosted content constituting the target website : <code>f(c) = h</code>.</p>
+
+<p>Our website is hence a set of files capturing different concerns : $website
+=\bigcup_{concerns}files$. For instance, $website = server \bigcup javascript \bigcup css \bigcup
+ html$. Each of those concerns can be subject to a generator. For instance, <code>css</code> files can be
+ generated from <code>scss</code> files. We will focus here on <code>html</code> files generation, which is the main
+ benefits of Hugo.</p>
+
+<p>Hence we have $pages = \bigcup_{S} \bigcup_{I} gen(template_s, html_{s,i})$. If we use
+ markdown (<code>md</code> file suffix) as a source format, and $S$ to denote a section(e.g. as a set of
+ pages) :</p>
+
+<p>$$ pages = \bigcup_{S} \bigcup_{I} gen(template_s, md2html(md_{s,i})) $$</p>
+
+<p>What are the benefits? On one side, it comes down to separation of concerns. Separating a page
+between a template and pure content allows to delegate the production of content to specialists
+without technical skills. On the other side, the template factors in a whole section of the
+website, and is automatically woven into the content, hence there is also a productivity gain.</p>
+
+<h1 id="hugo">Hugo</h1>
+
+<p>Hugo takes a root directory, with an expected structure, containing content with expected formats, and turns into to-be hosted website content.</p>
+
+<ul>
+<li>the <code>content</code> directory contains the fixed content of the website to be generated</li>
+<li>any other directory will be in the resulted website, without modification</li>
+<li>any content <code>c</code> from the <code>content</code> directory is transformed into the corresponding content on the
+resulted website :
+
+<ul>
+<li>$page = gen(templates(c), c)$</li>
+</ul></li>
+<li>the following template types are recognized by Hugo
+
+<ul>
+<li>list templates</li>
+<li>home page, section, taxonomy, content view, rss</li>
+<li>single page templates</li>
+<li>sitemap templates<br /></li>
+</ul></li>
+<li>Data can be passed at the according level through data templates</li>
+<li>A mechanism extending markdown syntax can be configured through <code>shortcode</code> templates</li>
+<li>Google Analytics, Disqus can be included through internal templates</li>
+<li>A base template can be used as a template of templates, in which other templates (partial
+templates) are included (for DRY purposes)</li>
+</ul>
+
+<h2 id="templating-mechanism">Templating mechanism</h2>
+
+<p>Given a <code>.md</code> content file, a <code>.html</code> file is derived by looking up for a <code>html</code> template, and
+helper <code>md</code> files. Specific rules depend on the type of content to be generated. Cf. Hugo
+documentation for the template lookup mechanism and order.</p>
+
+<p>Generation of final html is based on variables which are automatically evaluated by Hugo, such
+the page title, the creation date, etc. The list of such variables can be found in the
+documentation.</p>
+
+<p>In fine, default templating, and overriden templating allow for DRY templating. This means that
+to reconstruct a page from a <code>.md</code> file, one may have to consult several sources of templates, in
+several directories, which can be a tradeoff.</p>
+
+<p>Additionally weaving the dynamic aspects of the page into the fixed content requires learning
+another language and its syntax and system classes (pages, table of contents, etc.). This is not
+unlike for instance Office/VBA, which is the customization language for Office. However, without
+a dedicated IDE, it will remain painful to author, debug, and maintain such programs. As such
+Hugo is better fit for blogs, or any website where precisely the dynamic part is not often subject
+to maintenance (i.e. write once and forget).</p>
+
+<h1 id="issues-encountered">Issues encountered</h1>
+
+<ul>
+<li>templates do not compose!
+
+<ul>
+<li>sounds obvious, there are not meant to be composed. However, one cannot take parts of a theme
+(say table of contents and pagination) and mix it with other parts of a theme (say taxonomy
+and menu) easily.</li>
+</ul></li>
+<li>DSL has to be learnt, and no IDE to support it so far. Poor debugging and error feedback (limited
+to <code>printf</code>)</li>
+<li>the rules to associate templates to a given <code>.md</code> content are complex and require looking up a
+potentially large number of files (config.toml, data templates, terms template, localization,
+archetypes etc.)</li>
+</ul>
+
+<h1 id="tips">Tips</h1>
+
+<ul>
+<li>menu in toml menu.main</li>
+<li>to add a menu, go to toml, menu.main, then also change index.html and add the corresponding term  ex. <code>&lt;h4&gt;{{ T &quot;latestPost&quot; }}&lt;/h4&gt;</code>
+
+<ul>
+<li>or in the .md, add a menu : &ldquo;main&rdquo;!! makes sense</li>
+</ul></li>
+<li>tags, categories, i.e. taxonomies must have map singular/plural in toml file under <code>[taxonomies]</code></li>
+<li>use weights in content matter (index.md) or post.md or toml to have ordering
+
+<ul>
+<li>for example here with menu=&ldquo;main&rdquo;</li>
+</ul></li>
+<li>possibility to have directly templates for home/section/ or use a template&rsquo;s template i.e. baseof. cf. <code>https://gohugo.io/templates/base/</code></li>
+<li>mathjax in hugo : some issues with more technical needs
+
+<ul>
+<li>multi line : us <code>\\\\\</code> instead of <code>\\</code></li>
+<li>accolade : use <code>spaces</code>
+<br /></li>
+</ul></li>
+</ul>
+
+<pre><code class="language-latex">$$\begin{cases}
+   view &amp; = f_v(state) \\\\\
+   actions &amp; = f_a(state, events)
+\end{cases} $$
+</code></pre>
+
+	<nav>
+	
+	
+		<a class="next-post" href="http://brucou.github.io/scratch/testing_strategies/">Testing strategy<img class="icon-text" src="/img/next.svg"/>
+		</a>
+	
+	</nav>
+</article>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+

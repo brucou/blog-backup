@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Switch - Technuflexions</title>
+
+		<meta name="description" content="Motivation The Switch component allows to associate a set of values from a source (called switch source) to a component. When the switch source emits the values associated to a given component, that component is activated (switched on). Components which are not associated to the emitted set of values are deactivated (switched off).
+The Switch component can be viewed as a single-state state machine, whose only event source is the switch source and event guards are the predicates specifying the component matching.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>Switch</h1>
+	<h5> Last modified on
+		Sep 07, 2017
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			6 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>The <code>Switch</code> component allows to associate a set of values from a source (called switch source) to a component. When the switch source emits the values associated to a given component, that component is activated (switched on). Components which are not associated to the emitted set of values are deactivated (switched off).</p>
+
+<p>The <code>Switch</code> component can be viewed as a single-state state machine, whose only event source is the switch source and event guards are the predicates specifying the component matching.</p>
+
+<p>Practically speaking, the <code>Switch</code> component allows to improve separation of concerns by removing control flow out of some component designs. For instance, supposing we have a component whose behaviour depends on a discretizable parameter, in addition to other parameters, we need to write the logic corresponding to each discrete value in the body of the same function. With <code>Switch</code>, we can write several components corresponding to the logic for each discrete value separately.</p>
+
+<p>For example, a component might be specified to display a product page when the user is logged in, and otherwise display a login page. This component hence has two behaviors or concerns which are unrelated. The discrete values here can be thought of as <code>LOGGED_IN</code>, <code>NOT_LOGGED_IN</code>. With <code>Switch</code>, we can write a <code>Login</code> component separately and independently from the <code>Product</code> component, and let the <code>Switch</code> component activate the right component.</p>
+
+<p>Note that this makes less sense when the isolated concerns are not independent. For instance, a <code>Product</code> component which displays a product details page for a given product would not be a good fit for usage of the <code>Switch</code> component, even if one can discretize products by product ids. The code for displaying a given product id, being the same for any product, using <code>Switch</code> would lead to code duplication, violating the DRY principle.</p>
+
+<h1 id="api">API</h1>
+
+<h2 id="switch-switchsettings-componenttree-switchcomponent">Switch :: SwitchSettings -&gt; ComponentTree -&gt; SwitchComponent</h2>
+
+<h3 id="description">Description</h3>
+
+<p>Creates a switch component whose behaviour is parameterized via <code>SwitchSettings</code>. Children components are the components to be mapped to incoming values on the switch source.</p>
+
+<p>The parametrization is as follows :</p>
+
+<ul>
+<li>an array of sink names must be passed to indicate which sinks are to be extracted from the case components. Sinks produced by any child component which are not in the sink names array will be ignored. It is not necessary, for any sink name in that array, for a child component to return a sink of that name.</li>
+<li>the switch source can be specified in two ways :
+
+<ul>
+<li>the name of the source can be given as a string</li>
+<li>a function can be used to compute the switch source from <code>sources</code> and <code>settings</code> parameter of the switch component (i.e. the component returned after application of the <code>Switch</code> combinator).</li>
+</ul></li>
+</ul>
+
+<p>The behaviour is as follows :</p>
+
+<ul>
+<li>for every incoming value of the switch source, all predicates found in children <code>CaseComponent</code>s are executed.</li>
+<li>The components associated to the fulfilled predicates are switched on
+
+<ul>
+<li>they receive the triggering value of the switch source as settings, in the property configured in <code>as</code></li>
+<li><strong>note that the parent component does not receive such value as it is upper in the hierarchy</strong></li>
+</ul></li>
+<li>The other components are switched off</li>
+<li>If there is a incoming value on the switch source such that there is no matching case, then all components are deactivated
+
+<ul>
+<li>the DOM for the parent component will still be activated, even as there will be no children DOM content</li>
+<li>in the absence of a DOM content for the parent component, then an empty <code>&lt;div&gt;&lt;/div&gt;</code> will be issued. This is necessary to remove the formerly displayed DOM nodes from the DOM.</li>
+</ul></li>
+</ul>
+
+<h3 id="types">Types</h3>
+
+<ul>
+<li><code>SwitchComponent :: Component</code></li>
+<li><code>ComponentTree :: ChildrenComponents | [ParentComponent, ChildrenComponents]</code></li>
+<li><code>ParentComponent :: Component</code></li>
+<li><code>ChildrenComponents :: Array&lt;CaseComponent&gt;</code></li>
+<li><code>CaseComponent :: Component</code></li>
+<li><code>SwitchSettings :: Record {</code></li>
+<li><code>sinkNames :: [String]</code>  <strong>Mandatory</strong></li>
+<li><code>on :: SwitchOnCondition | SwitchOnSource</code> <strong>Mandatory</strong></li>
+<li><code>as :: String</code> <strong>Mandatory</strong></li>
+<li><code>eqFn :: T -&gt; T -&gt; Boolean</code> <strong>Optional</strong></li>
+<li><code>}</code></li>
+<li><code>SwitchOnCondition :: Sources -&gt; Settings -&gt; Source</code></li>
+<li><code>SwitchOnSource:: SourceName</code></li>
+<li><code>SourceName :: String</code></li>
+</ul>
+
+<h3 id="contracts">Contracts</h3>
+
+<ul>
+<li>children component MUST be <code>CaseComponent</code>, i.e. generated by the <code>Case</code> combinator</li>
+<li>if the switch source is specified by name, then that source name MUST be found as a property of the <code>sources</code> parameter</li>
+</ul>
+
+<h2 id="case-casesettings-componenttree-casecomponent">Case:: CaseSettings -&gt; ComponentTree -&gt; CaseComponent</h2>
+
+<h3 id="description-1">Description</h3>
+
+<p>The <code>Case</code> combinator returns a case component and is to be used solely in combination with the Switch combinator.</p>
+
+<p>It specifies a match between a value of a switch source and a component to be switched on. The match is specified by the property <code>when</code> in settings. Equality between two values can also be evaluated via a custom function passed in the <code>eqFn</code> property in settings.</p>
+
+<p>Every case component  will receive when executed the property <code>switchedOn</code> as part of its settings. That property will be the incoming value of the switch source triggering the case component.</p>
+
+<p>All <code>Case</code> component functions are executed for each incoming value. This means that case component functions will be activated for each matching incoming value.</p>
+
+<h3 id="types-1">Types</h3>
+
+<ul>
+<li><code>CaseComponent :: Component</code></li>
+<li><code>CaseSettings :: Record {</code></li>
+<li><code>when :: Object</code>  <strong>Mandatory</strong></li>
+<li><code>eqFn :: T -&gt; T -&gt; Boolean</code> <strong>Optional</strong></li>
+<li><code>}</code></li>
+</ul>
+
+<h3 id="contracts-1">Contracts</h3>
+
+<ul>
+<li>type contracts</li>
+</ul>
+
+<h1 id="example">Example</h1>
+
+<h1 id="tips">Tips</h1>
+
+<ul>
+<li>Note that the switch predicates are evaluated every time there is an incoming value on the switch source. If it is necessary to implement a logic by which the component switching should only trigger on <strong>CHANGES</strong> of the incoming value, that logic could be implemented with appending a <code>distinctUntilChanged</code> to the switch source.</li>
+<li>One should strive for having a relatively low number of discretized switch values as there is a performance cost which is linear with the number of such values. As a matter of fact, all predicates matching switched components to their discretized values are executed, for every incoming value of the switch source.</li>
+<li>One can have several fulfilled predicates for a given incoming value of the switch source. This means that several components could be activated for a given incoming value, but different conditions, which allows to implement more complex logic. This is however to use wisely, as the ability to reason about behaviour suffers somewhat. For instance, when several components can be activated for the same incoming value, and order of activation of those component matter, such ordering requirement is essentially hidden as implementation detail in the source code.</li>
+<li>One can also implement a <code>eqFn</code> such that a <code>Case</code> component is activated for a set of values instead of just one value. Alternatively, a <code>on</code> source can be computed in a way that assign a unique identifier to a given set of values. Using <code>eqFn</code> should however be more versatile, as one can specify a different <code>eqFn</code> for each <code>Case</code> component.</li>
+</ul>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/efsm/">
+            <img class="icon-text" src="/img/prev.svg"/>Extended finite state machine</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/router/">Router<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#api">API</a>
+<ul>
+<li><a href="#switch-switchsettings-componenttree-switchcomponent">Switch :: SwitchSettings -&gt; ComponentTree -&gt; SwitchComponent</a>
+<ul>
+<li><a href="#description">Description</a></li>
+<li><a href="#types">Types</a></li>
+<li><a href="#contracts">Contracts</a></li>
+</ul></li>
+<li><a href="#case-casesettings-componenttree-casecomponent">Case:: CaseSettings -&gt; ComponentTree -&gt; CaseComponent</a>
+<ul>
+<li><a href="#description-1">Description</a></li>
+<li><a href="#types-1">Types</a></li>
+<li><a href="#contracts-1">Contracts</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

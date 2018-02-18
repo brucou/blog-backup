@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Random notes on Technuflections</title>
+    <link>http://brucou.github.io/scratch/</link>
+    <description>Recent content in Random notes on Technuflections</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2017 brucou</copyright>
+    <lastBuildDate>Fri, 12 Jan 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://brucou.github.io/scratch/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>cyclejs - coupling event handlers to view description, while keeping testability</title>
+      <link>http://brucou.github.io/scratch/cyclejs---keeping-event-handlers-coupled-to-view-description-without-loosing-testability/</link>
+      <pubDate>Fri, 12 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/cyclejs---keeping-event-handlers-coupled-to-view-description-without-loosing-testability/</guid>
+      <description>Having event handlers declared together with the view  In sources, inject a subject factory In component, with that subject factory, create subject  subject will have automatically generatd unique id from the trace settings property  In view, with helper function, link the event listener to the subject in component, returns the subject when testing, send values through the subject  think some more I am close
+ conclusion : whatever I do is the same as what I have, event@selector is necessary to test anyways.</description>
+    </item>
+    
+    <item>
+      <title>cyclejs and concurrency control - a study of architectural alternatives</title>
+      <link>http://brucou.github.io/scratch/cyclejs----concurrency-control---a-study-of-architectural-alternatives/</link>
+      <pubDate>Fri, 12 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/cyclejs----concurrency-control---a-study-of-architectural-alternatives/</guid>
+      <description>concurrency control cf. Redux saga - all actions in one sink - several concurrent processes listening on actions - coordinated by ? shared-memory? message-passing? streams (declarative concurrncy)? investigate - https://redux-saga.js.org/, https://redux-saga.js.org/docs/recipes/, http://konkle.us/master-complex-redux-workflows-with-sagas/
+cf. Concepts, Techniques, and Models of Computer Programming ou PROGRAMMATION Concepts, techniques et modèles for concurrency models</description>
+    </item>
+    
+    <item>
+      <title>Blogging with hugo</title>
+      <link>http://brucou.github.io/scratch/using-hugo-for-my-blog/</link>
+      <pubDate>Sat, 09 Dec 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/using-hugo-for-my-blog/</guid>
+      <description>Background Hugo is a static website generator, in the same vein as Jekyll or Hexo. A website can be understood as :
+ a server with the usual concerns (routing, authentication, content delivery, etc.) hosted content (html, js, css, etc.)  A static website generator has, as its mission, the generation of the hosted content from other content. Hence it can be specified by f, a function so that, given a content c, returns the hosted content constituting the target website : f(c) = h.</description>
+    </item>
+    
+    <item>
+      <title>GUI testing</title>
+      <link>http://brucou.github.io/scratch/gui_testing/</link>
+      <pubDate>Thu, 02 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/gui_testing/</guid>
+      <description>Defining the problem To generate a set of test cases, test designers attempt to cover all the functionality of the system and fully exercise the GUI itself. The difficulty in accomplishing this task is three-fold:
+ to deal with domain size and with sequences the tester faces more difficulty when he has to do regression testing in addition to testing behaviour, the tester may also have to test for visual appearance  Size of the domain and sequences Unlike a CLI (command line interface) system, a GUI has many operations that need to be tested.</description>
+    </item>
+    
+    <item>
+      <title>Testing strategy</title>
+      <link>http://brucou.github.io/scratch/testing_strategies/</link>
+      <pubDate>Thu, 02 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/testing_strategies/</guid>
+      <description>Testing strategy Given the large size (infinite) of the domain of the function under test, the following hypothesis based on the knowledge of the implementation (gray-box testing) will be used to reduce when deemed convenient the size of the test space :
+ T1 : Independence hypothesis Testing against A | B is sufficient to guarantee behaviour on A x B (independence of A and B) T2 : Continuity hypothesis When we have to test against a set of possible values, we will only test the limit conditions, assuming that passing those tests implies a correct behaviour for the other values.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://brucou.github.io/scratch/cyclejs---towards-model-based-testing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/cyclejs---towards-model-based-testing/</guid>
+      <description>Testing process Reviewing runTestScenario  In fact we don&amp;rsquo;t really want time diagrams We do want predictability of order of inputs so we will send each input one after one, separating data from event symbol  Example:
+const testSpace = { scenario1 : { caseA : { events : &#39;iccsctttscscS&#39;, eventData : [ iData, cData, cData, sData, cData, tData, ... ] } } } const eventSymbols = { i : eventSimulatorI, c : eventSimulatorC, .</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://brucou.github.io/scratch/cyclejs----tree-visualization/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/cyclejs----tree-visualization/</guid>
+      <description>Motivation bla bla about how important in a dataflow architecture to view the data flowing for finding, understanding and remediating errors.
+ all component combinators call m would be nice to have different visual description for combinators too  Algorithm  m(spec, settings, components) every settings will have a reserved _path, and _name property DOC : all private settings should start with _ _path should be the path in the component tree to a given component ?</description>
+    </item>
+    
+  </channel>
+</rss>

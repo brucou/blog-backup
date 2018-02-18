@@ -1,0 +1,37 @@
+{{ partial "header" . }}
+
+<article>
+    <header>
+        {{ partial "title" . }}
+        {{ with .Content }}{{.}}{{ end }}
+    </header>
+
+    {{ if (eq $.Parent.Title "Projects") }}
+      <ul class="no-bullet">
+          {{ range .Paginator.Pages }}
+          {{ partial "li" . }}
+          {{ end }}
+      </ul>
+      {{ partial "paginator" . }}
+    {{ else }}
+      {{ range (where .Site.Pages "Section" "projects") }}
+        <ul class="no-bullet">
+            {{ range .Sections }}
+            <li>
+                <span><time datetime="{{.Date}}">{{ .Date.Format .Site.Params.DateFmt }}</time></span>
+                <a href="{{ .Permalink }}">{{ .Title }}</a>
+            </li>
+            {{ end }}
+        </ul>
+      {{ end }}
+    {{ end }}
+
+</article>
+{{ partial "footer" . }}
+
+
+{{/* keep the / right next to the parenthesis */}}
+{{/* printf "%#v" $.CurrentSection.Title */}}
+{{/* printf "%#v" (eq $.Parent.Title "Projects") */}}
+
+

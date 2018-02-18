@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Random notes on Technuflexions</title>
+    <link>http://brucou.github.io/scratch/</link>
+    <description>Recent content in Random notes on Technuflexions</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2017 brucou</copyright>
+    <lastBuildDate>Thu, 02 Nov 2017 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://brucou.github.io/scratch/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>GUI testing</title>
+      <link>http://brucou.github.io/scratch/gui_testing/</link>
+      <pubDate>Thu, 02 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/gui_testing/</guid>
+      <description>Defining the problem To generate a set of test cases, test designers attempt to cover all the functionality of the system and fully exercise the GUI itself. The difficulty in accomplishing this task is three-fold:
+ to deal with domain size and with sequences. In addition, the tester faces more difficulty when they have to do regression testing. in addition to testing behaviour, the tester must also test for visual appearance  Size of the domain and sequences Unlike a CLI (command line interface) system, a GUI has many operations that need to be tested.</description>
+    </item>
+    
+    <item>
+      <title>Testing strategy</title>
+      <link>http://brucou.github.io/scratch/testing_strategies/</link>
+      <pubDate>Thu, 02 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/testing_strategies/</guid>
+      <description>Testing strategy Given the large size (infinite) of the domain of the function under test, the following hypothesis based on the knowledge of the implementation (gray-box testing) will be used to reduce when deemed convenient the size of the test space :
+ T1 : Independence hypothesis Testing against A | B is sufficient to guarantee behaviour on A x B (independence of A and B) T2 : Continuity hypothesis When we have to test against a set of possible values, we will only test the limit conditions, assuming that passing those tests implies a correct behaviour for the other values.</description>
+    </item>
+    
+    <item>
+      <title>Using Hugo for my blog</title>
+      <link>http://brucou.github.io/scratch/using-hugo-for-my-blog/</link>
+      <pubDate>Tue, 09 May 2017 08:06:49 +0100</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/using-hugo-for-my-blog/</guid>
+      <description>Background Hugo is a static website generator, in the same vein as Jekyll or Hexo. A website can be understood as :
+ a server with the usual concerns (routing, authentication, content delivery, etc.) hosted content (html, js, css, etc.)  A static website generator has, as its mission, the generation of the hosted content from other content. Hence it can be specified by f, a function so that, given a content c, returns the hosted content constituting the target website : f(c) = h.</description>
+    </item>
+    
+  </channel>
+</rss>

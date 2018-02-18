@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Hugo on Technuflections</title>
+    <link>http://brucou.github.io/tags/hugo/</link>
+    <description>Recent content in Hugo on Technuflections</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2017 brucou</copyright>
+    <lastBuildDate>Sat, 09 Dec 2017 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://brucou.github.io/tags/hugo/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Blogging with hugo</title>
+      <link>http://brucou.github.io/scratch/using-hugo-for-my-blog/</link>
+      <pubDate>Sat, 09 Dec 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/scratch/using-hugo-for-my-blog/</guid>
+      <description>Background Hugo is a static website generator, in the same vein as Jekyll or Hexo. A website can be understood as :
+ a server with the usual concerns (routing, authentication, content delivery, etc.) hosted content (html, js, css, etc.)  A static website generator has, as its mission, the generation of the hosted content from other content. Hence it can be specified by f, a function so that, given a content c, returns the hosted content constituting the target website : f(c) = h.</description>
+    </item>
+    
+  </channel>
+</rss>

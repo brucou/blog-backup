@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>ForEach - Technuflexions</title>
+
+		<meta name="description" content="Motivation The ForEach component allows to &lsquo;execute&rsquo; a component every time a source is emitting a value. It is hence similar to the Switch component in that a component is switched on and off for every incoming value on the source. ForEach semantics are similarly akin to those of flatMapLatest or switchMap but on a component instead of on a source.
+Practically speaking, given a component which is parameterized by a value, the ForEach component allows to account for the variability of that value outside of the component&rsquo;s design.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>ForEach</h1>
+	<h5> Last modified on
+		Sep 07, 2017
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			3 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>The <code>ForEach</code> component allows to &lsquo;execute&rsquo; a component every time a source is emitting a value. It is hence similar to the <code>Switch</code> component in that a component is switched on and off for every incoming value on the source. <code>ForEach</code> semantics are similarly akin to those of  <code>flatMapLatest</code> or <code>switchMap</code> but on a component instead of on a source.</p>
+
+<p>Practically speaking, given a component which is parameterized by a value, the <code>ForEach</code> component allows to account for the variability of that value outside of the component&rsquo;s design.  For instance, given a component which displays a list of items, which can change according to the contents of a database, one can write the component in the form of <code>DisplayListItems(listItem)</code> instead of <code>DisplayListItems(listItem$)</code>, which leads to a simpler implementation for <code>DisplayListItems</code>.</p>
+
+<p>Note that for each incoming value of the source, the component is switched off and then on again. This means any non-persisted state local to the component will be reinitialized. In this case this behaviour is not desired, a turn-around is to persist the local state to retrieve it between switches.</p>
+
+<h1 id="api">API</h1>
+
+<h2 id="foreach-foreachsettings-componenttree-foreachcomponent">ForEach :: ForEachSettings -&gt; ComponentTree -&gt; ForEachComponent</h2>
+
+<h3 id="description">Description</h3>
+
+<p>Creates a <code>ForEach</code> component whose behaviour is parameterized via <code>ForEachSettings</code>. Children components are the components to be mapped to incoming values on the <code>ForEach</code> source.</p>
+
+<p>The parametrization is as follows :</p>
+
+<ul>
+<li>an array of sink names must be passed to indicate which sinks are to be extracted from the case components. Sinks produced by any child component which are not in the sink names array will be ignored. It is not necessary, for any sink name in that array, for a child component to return a sink of that name.</li>
+<li>the <code>ForEach</code> source is specified by <code>from</code> property in the form of a string which is the name of the source to be found in the <code>sources</code> parameter for the component.</li>
+<li>the incoming value from the <code>from</code> configured source is passed to the children component in their settings in a property configured in the <code>as</code> property of the <code>ForEach</code> component&rsquo;s settings.</li>
+</ul>
+
+<p>The behaviour is as follows :</p>
+
+<ul>
+<li>for every incoming value of the <code>ForEach</code> source, the children components are switched off and then switched on</li>
+<li>Children components are called with the same <code>sources</code> as the <code>ForEach</code> component, unless explicitly configured otherwise</li>
+<li>Children components are called with the same <code>settings</code> as the <code>ForEach</code> component, with the addition of a new property whose name is configured in <code>as</code> property of <code>ForEach</code> settings.</li>
+</ul>
+
+<h3 id="types">Types</h3>
+
+<ul>
+<li><code>ForEachComponent :: Component</code></li>
+<li><code>ComponentTree :: ChildrenComponents | [ParentComponent, ChildrenComponents]</code></li>
+<li><code>ParentComponent :: Component</code></li>
+<li><code>ChildrenComponents :: Array&lt;CaseComponent&gt;</code></li>
+<li><code>ForEachSettings :: Record {</code></li>
+<li><code>sinkNames :: [SinkName]</code>  <strong>Mandatory</strong></li>
+<li><code>from :: SourceName</code> <strong>Mandatory</strong></li>
+<li><code>as :: SettingsPropertyName</code> <strong>Mandatory</strong></li>
+<li><code>}</code></li>
+<li><code>SwitchOnCondition :: Sources -&gt; Settings -&gt; Source</code></li>
+<li><code>SwitchOnSource:: SourceName</code></li>
+<li><code>SourceName :: String</code></li>
+<li><code>SinkName :: String</code></li>
+<li><code>SettingsPropertyName :: String</code></li>
+</ul>
+
+<h3 id="contracts">Contracts</h3>
+
+<ul>
+<li>the source configured through the <code>from</code> property MUST be found as a property of the <code>sources</code> parameter.</li>
+<li>there must be at least one child component</li>
+</ul>
+
+<h1 id="example">Example</h1>
+
+<p>cf. demo</p>
+
+<h1 id="tips">Tips</h1>
+
+<ul>
+<li>If it is necessary to implement a logic by which the component switching should only trigger on <strong>CHANGES</strong> of the incoming value, that logic could be implemented with appending a <code>distinctUntilChanged</code> to the <code>ForEach</code> source.</li>
+<li>For each incoming value of the source, the component is switched off and then on again. This means any non-persisted state local to the component will be reinitialized. In this case this behaviour is not desired, a turn-around is to persist the local state to retrieve it between switches.</li>
+</ul>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/router/">
+            <img class="icon-text" src="/img/prev.svg"/>Router</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/listof/">ListOf<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#api">API</a>
+<ul>
+<li><a href="#foreach-foreachsettings-componenttree-foreachcomponent">ForEach :: ForEachSettings -&gt; ComponentTree -&gt; ForEachComponent</a>
+<ul>
+<li><a href="#description">Description</a></li>
+<li><a href="#types">Types</a></li>
+<li><a href="#contracts">Contracts</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#example">Example</a></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

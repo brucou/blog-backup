@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>Applying componentization to reactive systems : sample application - Technuflexions</title>
+
+		<meta name="description" content="Introduction As discussed in a former post, user interfaces are reactive systems, and can be specified through a reactive function which associate events (originating from the user, or the interfaced systems) to actions to be executed. Expressing events, actions, and local state as streams, and expressing local state update also as an action, we have : $actions = f(state, events)$, where $f$ is a pure function. In addition to that function, which expresses the logic of the application, interfaces with the relevant systems must be defined.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>Applying componentization to reactive systems : sample application</h1>
+	<h5>
+		<time datetime="2017-10-16 00:00:00 &#43;0000 UTC">Oct 16, 2017</time>
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/components">components</a>
+			30 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+    
+
+<h1 id="introduction">Introduction</h1>
+
+<p>As discussed in a <a href="/posts/user-interfaces-as-reactive-systems">former post</a>, user interfaces are
+reactive systems, and can be specified through a reactive function which associate events
+(originating from the user, or the interfaced systems) to actions to be executed. Expressing events, actions, and local state as streams, and expressing local state update also as an action, we have  : $actions = f(state, events)$, where $f$ is a pure function. In addition to that function, which expresses the logic of the
+application, interfaces with the relevant systems must be defined. Typically this means
+interfaces to receive events, and execute actions.</p>
+
+<p>Our proposed approach is based on cyclejs framework, in which actions are executed through
+a dedicated interface called <code>driver</code> and events streams are created where and when necessary
+through streams and streams factories. Those streams factories themselves are passed as parameters
+ to the reactive function. As such the reactive function, in a <code>cyclejs</code> context is not pure.
+ Adjusting for this caveat, our reactive equation still holds.</p>
+
+<p>We enrich the <code>cyclejs</code> architectural choices, with a <a href="/posts/a-componentization-framework-for-cyclejs">componentization model</a>, which allows to
+build a larger application from a number of small components with the help of component
+combinators. A combinator library is provided to cover the most generic needs occurring while
+building a componentized application, including, but not limited to, sequential composition, data
+injection, control flow, routing, iteration, change propagation.</p>
+
+<p>The present document aims at showing how to translate a reactive system specification into an
+implementation with our proposed componentization model. It is hence :</p>
+
+<ul>
+<li>part documentation, addressing the question <em>How to leverage the proposed component model to write
+an application</em></li>
+<li>part showcase, in which the advantages of the componentization approach appear in connection with
+an iterative software development process</li>
+</ul>
+
+<p>In the first section, we will quickly describe the application under development. We will then
+proceed with setting up the structure (shell) in which the application logic will be contained.
+We will then in subsequent sections, iteratively extend our code to implement more and more of
+our target application. For each section, we will provide a link to the corresponding source
+code, contained in a dedicated branch of the demo repository. We will however not develop the
+whole application here, but the minimum subset necessary for us to reach our documentation and
+showcasing goals.</p>
+
+<h1 id="target-application">Target application</h1>
+
+<p>The target application is a task management application, taken from the <a href="https://github.com/PacktPublishing/Mastering-Angular-2-Components">Mastering Angular2
+components</a> book. Users handle projects, projects have tasks, which can be in status finalized or pending. The user can review and update existing tasks, create new tasks, and delete existing ones. Tasks can be filtered by status. The user can add comments to a project which are presented chronologically. A summary of activities can be consulted in a dedicated section. A dashboard provides a summary view of the projects and tasks. Finally, plugins can be administered and integrated into the application to extend its functionality.</p>
+
+<p>This is an application with a reasonable size, and we will not seek to implement the full
+functionality previously described, in one go. In the present version of this document, we will
+focus on a first batch of features, which includes only the project browsing and task management
+. We will also detail only portions of our implementation, selecting and detailing those portions which
+illustrates a use of the component model not previously illustrated. This aims at covering as
+large a percentage possible of the available component combinators, and illustrating as many
+different techniques as possible.</p>
+
+<p>Rather than producing a detailed written specification, we will provide the following
+screenshot, from which a feature list is easy to guess. For supplementary details, we refer the
+reader to the book.</p>
+
+<p><img src="/img/screens/main_screen_ang2_example.png" alt="Angular2 project application" /></p>
+
+<p>In addition to this, the following routes are specified :</p>
+
+<ul>
+<li><code>/dashboard</code> : handles the dashboard functionality</li>
+<li><code>/projects/:projectId</code> : shows the project description, together with a tab bar (<code>Tasks</code>,
+<code>Comments</code>, <code>Activities</code>)
+
+<ul>
+<li><code>/projects/:projectId/tasks</code> : additionally shows the tasks belonging a project with the given
+<code>projectId</code>, together with a button group to filter tasks, and a input field to enter new tasks</li>
+<li><code>/projects/:projectId/task/:nr</code> : additionally shows a specific task details, with the ability
+to modify those details</li>
+<li><code>/projects/:projectId/comments</code> : additionally shows the comments logged for a given project</li>
+<li><code>/projects/:projectId/activities</code> : additionally shows the activities logged for a given
+project</li>
+</ul></li>
+<li><code>/plugins</code> : handles the plugin functionality</li>
+</ul>
+
+<h1 id="step-0-set-up">Step 0 : set up</h1>
+
+<h2 id="domain-model">Domain model</h2>
+
+<p>We will work with a domain model with three entities : projects, tasks, and activities. Data is stored remotely in a firebase repository. Thereafter follows an example of the physical data model (dictated only by
+our self-imposed constraint to allow for direct comparison with the Angular2 application - there
+are other ways to design that physical data model):</p>
+
+<pre><code class="language-javascript">projects: {
+    _id: 'project-1',
+    type: 'project',
+    deleted: false,
+    title: 'Your first project',
+    description: 'This is your first project in the task management system you\'re building within the context of the Angular 2 Components book.',
+    tasks: [{
+      type: 'task',
+      nr: 1,
+      position: 0,
+      title: 'Task 1',
+      done: null,
+      created: +Moment(now),
+      efforts: {
+        estimated: 86400000,
+        effective: 0
+      }
+    }]
+  }
+
+activities: [
+    {
+    type: 'activity',
+    user: {
+      name: 'You',
+      pictureDataUri: 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAxOS4yLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0iQ2FwYV8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4PSIwcHgiIHk9IjBweCINCgkgdmlld0JveD0iMCAwIDMxMS41IDMxMS41IiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCAzMTEuNSAzMTEuNTsiIHhtbDpzcGFjZT0icHJlc2VydmUiPg0KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4NCgkuc3Qwe2ZpbGw6IzMzMzMzMzt9DQo8L3N0eWxlPg0KPGc+DQoJPGc+DQoJCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xNTUuOCwwQzY5LjcsMCwwLDY5LjcsMCwxNTUuOGMwLDM3LjUsMTMuMyw3MS45LDM1LjMsOTguOGMzLjQtMjcuMywzMC42LTUwLjMsNjguOC02MS4yDQoJCQljMTMuOSwxMywzMiwyMC45LDUxLjcsMjAuOWMxOS4yLDAsMzYuOS03LjUsNTAuNy0xOS45YzM4LjUsMTEuOSw2NS4xLDM2LjMsNjYsNjQuNmMyNC4zLTI3LjUsMzkuMS02My42LDM5LjEtMTAzLjENCgkJCUMzMTEuNSw2OS43LDI0MS44LDAsMTU1LjgsMHogTTE1NS44LDE5NS43Yy05LjksMC0xOS4zLTIuNy0yNy42LTcuNWMtMjAuMS0xMS40LTMzLjktMzQuOC0zMy45LTYxLjdjMC0zOC4xLDI3LjYtNjkuMiw2MS41LTY5LjINCgkJCWMzMy45LDAsNjEuNSwzMSw2MS41LDY5LjJjMCwyNy40LTE0LjIsNTEtMzQuOCw2Mi4yQzE3NC40LDE5My4yLDE2NS4zLDE5NS43LDE1NS44LDE5NS43eiIvPg0KCTwvZz4NCjwvZz4NCjwvc3ZnPg0K'
+    },
+    time: +Moment(now),
+    subject: 'project-1',
+    category: 'tasks',
+    title: 'A task was updated',
+    message: 'The task \'New task created\' was updated on #project-1.',
+    _id: 'ECEF8127-C237-9612-924B-2A087D6FACA4'
+  },
+  ]
+</code></pre>
+
+<h2 id="interfaced-systems-drivers">Interfaced systems&rsquo; drivers</h2>
+
+<p>Actions that are undertaken as a response to events are : domain data update, DOM update, route
+change, and of course updating local state (persisted and non persisted).
+As per events to be handled by the system, we have : user events (i.e. DOM events), local state
+update notification, route change notification.</p>
+
+<p>This leads to the following drivers :</p>
+
+<ul>
+<li>write drivers : DOM driver, router driver, domain update driver, local state update driver</li>
+<li>read drivers : DOM driver, router driver, domain query driver, local state query driver</li>
+</ul>
+
+<p>We will use :</p>
+
+<ul>
+<li>router driver : for read and write, we use the same <a href="https://github.com/cyclejs/cyclejs/tree/master/history">history driver</a> from <code>cycle</code></li>
+<li>DOM write driver : standard snabbdom default DOM <code>cycle</code> driver</li>
+<li>DOM read driver : document driver which injects the <code>document</code> dependency to read from the DOM</li>
+<li>domain update and query drivers : we use a domain <a href="/projects/component-combinators/querydriver">Query</a>
+driver and domain <a href="/projects/component-combinators/actiondriver">Action</a> driver, where entities
+and the methods applicable to them are defined</li>
+<li>local state drivers : we use a in-memory store to query and update data in the local domain</li>
+</ul>
+
+<p>This leads us to the following set up code :</p>
+
+<pre><code class="language-javascript">    const { sources, sinks } = run(App, {
+      [DOM_SINK]: filterNull(makeDOMDriver('#app', {
+        transposition: false,
+        modules: defaultModules
+      })),
+      document: documentDriver,
+      queue$: makeQueueDriver(fbRoot.child('!queue'), 'responses', 'tasks', { debug: true }),
+      domainQuery: makeDomainQueryDriver(repository, domainObjectsQueryMap),
+      domainAction$: makeDomainActionDriver(repository, domainActionsConfig),
+      storeAccess: makeDomainQueryDriver(inMemoryStore, inMemoryStoreQueryMap),
+      storeUpdate$: makeDomainActionDriver(inMemoryStore, inMemoryStoreActionsConfig),
+      router: makeHistoryDriver(createHistory(), { capture: true }),
+    });
+</code></pre>
+
+<p>For the full code and running demo, see <a href="https://github.com/brucou/component-combinators/tree/project-management-app-step-0/examples/AllInDemo">here</a>.</p>
+
+<h1 id="step-1-sidepanel-navigation-and-mainpanel">Step 1 : SidePanel (navigation) and MainPanel</h1>
+
+<p>We divide the application in two independent components, one handling the side navigation
+(<code>SidePanel</code>) and the other one handling functionalities depending on the current route
+(<code>MainPanel</code>).</p>
+
+<p>Our starting code for the <code>App</code> is then :</p>
+
+<pre><code class="language-javascript">App = m({}, {}, [Div('.app'), [
+                    SidePanel,
+                    MainPanel
+                  ]])
+</code></pre>
+
+<p>We are however going to do two things : inject pieces of state that will be used by both
+components, and massage the route input arriving through the router driver in a convenient form
+(basically removing a leading <code>/</code> if any). This can be done at any relevant level. However, as
+those sources of events and pieces of state will be used by the whole application, it is more DRY
+ to inject them at the top level, so that all downstream components inherit them unless otherwise
+  configured. For the same reason, we will configure the settings of the router driver once for all, and
+  declare the list of sinks that the application handles at this level. <code>sinkNames</code> is mandatory
+  for several components combinators to filter the sinks returned from children components, so we
+   put it at the top level for the same DRY reasons.</p>
+
+<p>The corresponding code includes :</p>
+
+<pre><code class="language-javascript">export const App = InjectSourcesAndSettings({
+    sourceFactory: function (sources, settings) {
+      // NOTE : we need the current route which is a behaviour
+      const { router, domainQuery } = sources;
+      const currentRouteBehaviour = router
+        .map(location =&gt; {
+          const route = location.pathname;
+          return (route &amp;&amp; route[0] === '/') ? route.substring(1) : route
+        })
+        // starts with home route
+        .startWith('')
+        .shareReplay(1);
+      // NOTE : we need the route change event
+      // Now it was important to do this in that order, because we want currentRouteBehaviour to
+      // be subscribed before (no route change before having a current route)
+      // A former implementation url$ = incomingRouteEvents$.shareReplay(1) failed as url$ was not
+      // subscribed till after the route had changed, and by then the new route value was already
+      // emitted, so url$ would not emit anything... One has to be very careful dealing with
+      // streams and ordering
+      const incomingRouteEvents$ = currentRouteBehaviour.share();
+      const projects$ = domainQuery.getCurrent(PROJECTS);
+      const user$ = domainQuery.getCurrent(USER);
+
+      return {
+        // router
+        url$: currentRouteBehaviour,
+        [ROUTE_SOURCE]: incomingRouteEvents$,
+        // NOTE : domain driver always send behaviour observables (i.e. sharedReplayed already)
+        user$,
+        // NOTE : `values` to get the actual array because firebase wraps it around indices
+        projects$: projects$.map(values),
+        projectsFb$: projects$
+      }
+    },
+    settings: {
+      sinkNames: ['domainAction$', 'storeUpdate$', DOM_SINK, 'router', 'focus'],
+      routeSource: ROUTE_SOURCE
+    }
+  }, [Div('.app'), [
+    SidePanel,
+    MainPanel
+  ]]
+);
+</code></pre>
+
+<p><strong>Pay attention to</strong> :</p>
+
+<ul>
+<li>the querying for domain entities related to the projects and the user through the query
+driver</li>
+<li>the use of <code>Div('.app')</code> as a container for the list of components (main and side
+panels). Full explanation of the feature can be found at the <a href="/projects/component-combinators/m-component---merge-default-functions/#regular-dom-merge">corresponding documentation page</a> (the container here acts as parent component). In short, all DOM trees
+returned by the enclosed components will be inserted within the DOM tree of the container.</li>
+<li>the distinction between the route change event, and the route state which is a behaviour<sup class="footnote-ref" id="fnref:behaviour"><a rel="footnote" href="#fn:behaviour">1</a></sup>. The
+general, and very important rule, is to <strong>systematically</strong> decide whether a reactive entity of
+interest is modelized better by an event or a behaviour, and to apply the corresponding marker
+(<code>share()</code> for events, <code>shareReplay(1)</code> for behaviours). Failing to do this is the origin of a
+large portion of bugs encountered when manipulating streams.</li>
+</ul>
+
+<p>For the full code and running demo, see <a href="https://github.com/brucou/component-combinators/tree/project-management-app-step-1/examples/AllInDemo">here</a>.</p>
+
+<p>This example allows us to illustrate an important componentization tip.</p>
+
+<h2 id="tip-what-makes-a-good-breakdown">TIP : What makes a good breakdown</h2>
+
+<p>What makes this breakdown a good one? Independence or loose coupling is the key here :</p>
+
+<ul>
+<li><code>MainPanel</code> can be implemented fairly independently from <code>SidePanel</code></li>
+<li>the only reason for change of <code>SidePanel</code> that would affect <code>MainPanel</code> is a change in the
+route associated to the projects<sup class="footnote-ref" id="fnref:routechange"><a rel="footnote" href="#fn:routechange">2</a></sup></li>
+<li>both components share no common events or actions or logic. We took our initial reactive system, split it in two, smaller, largely independent subsystems, whose complexity is strictly lower than the original system, and
+easier to write</li>
+</ul>
+
+<p>More generally, it is desirable to build a complex system by assembling, in a cohesive way, loosely
+coupled components, so that the cost of redesigning each of such adoptable components (or replacing
+by a better component) can be minimized.</p>
+
+<h1 id="step-2-sidepanel">Step 2 : SidePanel</h1>
+
+<p>Let&rsquo;s implement our <code>SidePanel</code> component. Here are the specifications we can extract from the
+overall application&rsquo;s specifications :</p>
+
+<table>
+<thead>
+<tr>
+<th>Events</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>INIT</td>
+<td>DOM : display welcome message and task summary</td>
+</tr>
+
+<tr>
+<td></td>
+<td>DOM : display 3 sections with  possibly subsections</td>
+</tr>
+
+<tr>
+<td>click on subsections</td>
+<td>navigate to the corresponding route</td>
+</tr>
+</tbody>
+</table>
+
+<p>We define the routes to be navigated to as per specification :</p>
+
+<ul>
+<li><code>/projects/:projectId</code></li>
+<li><code>/dashboard</code></li>
+<li><code>/plugins</code></li>
+</ul>
+
+<p>To compute the DOM view (in particular the task summary and the projects section), we will need a
+ local copy of the remotely persisted following domain entities:</p>
+
+<ul>
+<li><code>projects</code></li>
+<li><code>user</code></li>
+</ul>
+
+<p>As explained in the previous step, we have already injected those sources at the top level of
+the application. This means that those sources will be available for every component under
+<code>sources.user$</code>, and <code>sources.projects$</code>. We will then seek to write <code>SidePanel</code> as :</p>
+
+<pre><code class="language-javascript">SidePanel =
+  m({}, {}, [Div('.app__l-side'), [
+    Navigation({}, [
+      NavigationSection({ title: 'Main' }, [
+        NavigationItem( { project: { title: 'Dashboard', link: 'dashboard' } }, [])
+      ]),
+      NavigationSection({ title: 'Projects' }, [
+        InSlot('navigation-item', [
+          ListOfItemsComponent
+        ])
+      ]),
+      NavigationSection({ title: 'Admin' }, [
+        NavigationItem( { project: { title: 'Manage Plugins', link: 'plugins' } }, [])
+      ]),
+    ])
+  ])
+</code></pre>
+
+<p>where :</p>
+
+<ul>
+<li><code>Navigation</code> is a ad-hoc component combinator which
+
+<ul>
+<li>accepts children components as an array of components</li>
+<li>wraps all <code>navigation-section</code> slot content from its children components into a <code>nav</code> tag</li>
+<li>passes up unmodified all non-DOM actions (carried by the non-DOM sinks)</li>
+<li>adds some style specific to its navigation concern</li>
+</ul></li>
+<li><code>NavigationSection</code> is a component combinator which
+
+<ul>
+<li>can (must) be parametrized by a <code>title</code> property</li>
+<li>accepts children components as an array of components</li>
+<li>wraps all <code>navigation-item</code> slot content from its children components into a list item (<code>li</code>)</li>
+<li>passes up unmodified all non-DOM actions from its children component (carried by the non-DOM sinks)</li>
+<li>adds some style specific to its navigation concern</li>
+</ul></li>
+<li><code>NavigationItem</code> is a component combinator which
+
+<ul>
+<li>can (must) be parametrized by the <code>title</code> and <code>link</code> properties</li>
+<li>does not accept children components</li>
+<li>displays the title, and a click on that title triggers a routing action passed through the router sink</li>
+<li>emphasizes the current project selection as determined by the route <code>/projects/:projectId</code></li>
+</ul></li>
+<li><code>ListOfItemsComponent</code> is a component which, from <code>projects</code> :
+
+<ul>
+<li>get the current list of projects,</li>
+<li>computes a title (project name) and a link (<code>/project/projectId</code>),</li>
+<li>and for each project in that list, accumulates it in the shape of a <code>NavigationItem</code> parameterized with the computed title and link</li>
+</ul></li>
+</ul>
+
+<p>Let&rsquo;s go in detail about the implementation, and by doing so learn about the slot mechanism, how
+to write ad-hoc combinators, and components which displays a list of items.</p>
+
+<h2 id="slots-and-container-components">Slots and container components</h2>
+
+<p>Combinators accept either a list of components (<code>Array&lt;Component&gt;</code>), or a container and a list of
+components (<code>[ContainerComponent, Array&lt;ChildrenComponent&gt;]</code>). The container component is used to
+give to apply some processing to the children components&rsquo; sinks. Unless otherwise specified, the
+default processing is to merge all non-DOM actions from the children components&rsquo; sinks, and to
+merge DOM sinks from the children components&rsquo; sinks following a slot mechanism à la web components.</p>
+
+<p>The container component may define a slot or location, where children DOM sinks will be inserted.
+ The container component hence provides a template, and the children DOM sinks provides the
+ content filling that template. For more details of the slot mechanism, see the <a href="/projects/component-combinators/m-component---merge-default-functions/#slotted-dom-merge">documentation</a>. A
+ simple way to set a slot for the DOM content for children components is to use the <a href="/projects/components-combinators/inslot"><code>InSlot</code></a> combinator.</p>
+
+<p>For our <code>Navigation</code> combinator, we want to put the DOM sinks corresponding to the navigation
+sections after displaying the welcome message, and within a styling <code>div</code>.</p>
+
+<p>We define first the container component, which displays the welcome message and task count(termed
+<code>TaskSummary</code> here), and declares the slot for the navigation sections :</p>
+
+<pre><code class="language-javascript">function NavigationContainerComponent(sources, settings) {
+  const { user$, projects$ } = sources;
+  // combineLatest allows to construct a behaviour from other behaviours
+  const state$ = $.combineLatest(user$, projects$, (user, projects) =&gt; ({ user, projects }))
+
+  return {
+    [DOM_SINK]: state$.map(state =&gt; {
+      return div('.navigation', [
+        renderTasksSummary(state),
+        nav({ slot: 'navigation-section' }, [])
+      ])
+    })
+  }
+}
+</code></pre>
+
+<h2 id="navigation-combinator">Navigation combinator</h2>
+
+<p>After that, we are ready to define the <code>Navigation</code> combinator :</p>
+
+<pre><code class="language-javascript">function Navigation(navigationSettings, componentArray){
+  return m({}, navigationSettings, [NavigationContainerComponent, componentArray])
+}
+</code></pre>
+
+<p>This deserves a few words of explanation. <code>m</code> is a generic combinator which takes an array of
+components, and returns a combined component. That combined component, by default (that is the
+case here, as we pass an empty object as <code>m</code> behaviour&rsquo;s specification), will pass its sources and<br />
+<code>navigationSettings</code> to all children components to compute their sinks, will merge (as in <code>Rx.Observable.merge</code>) the resulting non-DOM sinks from the children components, and merge the DOM sinks <a href="/projects/component-combinators/m-component---merge-default-functions/#slotted-dom-merge">à la web components</a>, i.e.
+dispatching children DOM content into its respective slots, as configured in the <code>NavigationContainerComponent</code>.</p>
+
+<h2 id="navigationsection-combinator">NavigationSection combinator</h2>
+
+<p>In the same way, we can write the <code>NavigationSection</code> as :</p>
+
+<pre><code class="language-javascript">function NavigationSectionContainerComponent(sources, settings) {
+  const { title } = settings;
+
+  return {
+    [DOM_SINK]: $.of(
+      div('.navigation-section', { slot: 'navigation-section' }, [
+        h2('.navigation-section__title', title),
+        ul('.navigation-section__list', { slot: 'navigation-item' }, [])
+      ])
+    )
+  }
+}
+
+function NavigationSection(navigationSectionSettings, componentArray){
+  return m({}, navigationSectionSettings, [NavigationSectionContainerComponent, componentArray])
+}
+</code></pre>
+
+<p>Pay attention to how :</p>
+
+<ul>
+<li>the <code>div</code> vNode combinator has been extended with a slot module. That slot module marks
+the corresponding vTree with the name of the slot it belongs to. Note also how we set the slot
+for the <code>NavigationItem</code> components (reminder : <code>NavigationItem</code> are the expected children
+components for <code>NavigationSection</code>)</li>
+<li>For the <code>navigation-section</code> slot, content is provided. For the <code>navigation-item</code>, content is not provided, as it will be filled in by children components.</li>
+<li><code>navigation-section</code> slot is at the top level of the <code>vNode</code> tree for the
+<code>NavigationSectionContainerComponent</code>. Similarly, <code>NavigationItem</code> components will also have to
+have their slot set at top level, because slot merging only looks at the children&rsquo;s DOM top vNode
+for slots.</li>
+</ul>
+
+<h2 id="listofitemscomponent-component">ListOfItemsComponent component</h2>
+
+<p>Last, let&rsquo;s see how to write a component which displays a list of items. We have the <a href="/projects/component-combinators/listof"><code>ListOf</code></a> combinator which does just that, but we have to call it
+with the right inputs. To do so, we will first inject the relevant piece of state (the list to
+project titles to be displayed, and the links to navigate to) with <code>InjectSourcesAndSettings</code>. We
+ also want the side panel updated whenever the project titles change in the source of
+ truth (remote repository). The <a href="/projects/component-combinators/foreach"><code>ForEach</code></a> allows to activate a component tree whenever the value of a behaviour changes, or an event is emitted ; and will cover our requirements nicely. This leads to the following code :</p>
+
+<pre><code class="language-javascript">function getProjectNavigationItems$(sources, settings) {
+   return sources.projects$
+     .map(filter(project =&gt; !project.deleted))
+     .map(map(project =&gt; ({
+       title: project.title,
+       link: ['projects', project._id].join('/')
+     })))
+     .distinctUntilChanged()
+     // NOTE : this is a behaviour
+     .shareReplay(1)
+     ;
+}
+
+const ListOfItemsComponent =
+  InjectSources({ projectNavigationItems$: getProjectNavigationItems$ }, [
+    ForEach({ from: 'projectNavigationItems$', as: 'projectList' }, [
+      ListOf({ list: 'projectList', as: 'project' }, [
+        EmptyComponent,
+        NavigationItem
+      ])
+    ])
+  ]);
+</code></pre>
+
+<p>For each new value of <code>projectNavigationItems$</code>, the setting property <code>projectList</code> will be
+updated to that value, and a list of <code>NavigationItem</code> will be activated. Each of the
+<code>NavigationItem</code> will receive a <code>project</code> setting property which holds the value of one element of
+ the <code>projectList</code> array, together with the index of that particular element. For more
+ information, see the corresponding documentation of both operators.</p>
+
+<p>For the full code and running demo, see <a href="https://github.com/brucou/component-combinators/tree/project-management-app-step-2/examples/AllInDemo">here</a>.</p>
+
+<h1 id="step-3-main-panel">Step 3 : Main panel</h1>
+
+<p>As per specifications, the main panel is url-driven. This gives us the following breakdown :</p>
+
+<pre><code class="language-javascript">export const MainPanel =
+  m({}, {}, [Div(`.app__l-main`), [
+    OnRoute({ route: 'dashboard' }, [ProjectsDashboard]),
+    OnRoute({ route: 'projects/:projectId' }, [Project]),
+    OnRoute({ route: 'plugins' }, [ManagePlugins]),
+  ]]);
+</code></pre>
+
+<p>where :</p>
+
+<ul>
+<li><code>ProjectsDashboard</code> handles the dashboard functionality</li>
+<li><code>ManagePlugins</code> handles the plugin functionality</li>
+<li><code>Project</code> handles the display of information about the projects and the tab bar (<code>Task</code>, <code>Comment</code>,
+<code>Activities</code>)</li>
+</ul>
+
+<p>As it is immediately visible from the example, configuring components to be activated on a given
+route is pretty straight forward. Not immediately visible here, in the case of a route with
+paramter (<code>projects/:projectId</code>), the parameters (<code>projectId</code>) will be passed to downstream
+components through <code>settings</code>. For more details on the <code>OnRoute</code> combinator, see the
+<a href="/projects/component-combinators/router/">documentation</a>.</p>
+
+<p>We will not go into detail about all three components, but rather focus on detailing the
+<code>Project</code> component.</p>
+
+<h2 id="project-component">Project component</h2>
+
+<p>The project component has the following specifications :</p>
+
+<table>
+<thead>
+<tr>
+<th>Events</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>INIT</td>
+<td>DOM : display project header and tab bar with no tab selected</td>
+</tr>
+
+<tr>
+<td>route change to <code>tasks</code></td>
+<td>DOM : display project task list</td>
+</tr>
+
+<tr>
+<td>route change to <code>task/:nr</code></td>
+<td>DOM : display task detail for task <code>nr</code></td>
+</tr>
+
+<tr>
+<td>route change to <code>comments</code></td>
+<td>DOM : display project&rsquo;s comments</td>
+</tr>
+
+<tr>
+<td>route change to <code>activities</code></td>
+<td>DOM : display project&rsquo;s activities</td>
+</tr>
+</tbody>
+</table>
+
+<p>The relevant piece of state here (reminder : the route here is <code>projects/:projectId</code>) is
+information about the specific project pointed at by the route. This is the object from which we
+will get the project&rsquo;s comments, activities, etc.</p>
+
+<p>The state we need is retrieved as follows :</p>
+
+<pre><code class="language-javascript">export function projectsStateFactory(sources, settings) {
+  const { [ROUTE_PARAMS]: { projectId } } = settings;
+
+  return sources.projectsFb$
+    .map(projectsFb =&gt; {
+      const fbKeys = keys(projectsFb);
+      const _values = values(projectsFb);
+      const index = _values.findIndex(project =&gt; project._id === projectId);
+      const fbIndex = fbKeys[index];
+      const project = _values[index];
+
+      return {
+        fbIndex,
+        project
+      }
+    })
+    .shareReplay(1)
+}
+</code></pre>
+
+<p>Not how <code>projectId</code> from the route is passed through <code>settings</code>. Then <code>Project</code> can be written as :</p>
+
+<pre><code class="language-javascript">export const Project =
+  InjectSources({ projectFb$: projectsStateFactory }, [Div('.project'), [
+    ProjectHeader,
+    m({}, { tabItems }, [TabContainer, [
+      OnRoute({ route: 'tasks' }, [ProjectTaskList]),
+      OnRoute({ route: 'task/:nr' }, [Div('.task-details', { slot: 'tab' }), [ProjectTaskDetails]]),
+      OnRoute({ route: 'comments' }, [Div('.comments', { slot: 'tab' }), [ProjectComments]]),
+      OnRoute({ route: 'activities' }, [Div('.activities', { slot: 'tab' }), [ProjectActivities]])
+    ]])
+  ]]);
+</code></pre>
+
+<p>where :</p>
+
+<ul>
+<li><code>ProjectHeader</code> displays the title of the project together with some description</li>
+<li><code>TabContainer</code> is a container component, also handling the tab logic (i.e. emphasizing the tab
+which is active)</li>
+<li><code>ProjectTaskList</code> handles displaying the panel which displays a list of tasks, allows to enter a
+new task, and/or filter the list of tasks.</li>
+<li><code>ProjectTaskDetail</code> handles displaying the details for a task, and allows the user to modify
+those details</li>
+<li><code>ProjectComments</code> handles displaying the comments for a project</li>
+<li><code>ProjectActivities</code> handles displaying the activities related to a project</li>
+</ul>
+
+<p>Note how we have nested routes (<code>projects/:projectId/tasks</code>) as naturally as we have flat routes.</p>
+
+<p>For more details on how the slot logic interacts with the <code>TabContainer</code> component, see the
+<code>TabContainer</code> code. For the full code and running demo, see <a href="https://github.com/brucou/component-combinators/tree/project-management-app-step-3/examples/AllInDemo">here</a>.</p>
+
+<h1 id="step-4-projecttasklist-component">Step 4 : <code>ProjectTaskList</code> component</h1>
+
+<p>We will seek to write the <code>ProjectTaskList</code> component as follows :</p>
+
+<pre><code class="language-javascript">const ProjectTaskListContainer = vLift(
+  div('.task-list.task-list__l-container', { slot: 'tab' }, [
+    div('.task-list__l-box-a', { slot: 'toggle' }, []),
+    div('.task-list__l-box-b', { slot: 'enter-task' }, []),
+    div('.task-list__l-box-c', [
+      div('.task-list__tasks', { slot: 'tasks' }, [])
+    ])
+  ]));
+
+export const  =
+  m({}, {}, [ProjectTaskListContainer, [
+    InSlot('toggle', [ToggleButton]),
+    InSlot('enter-task', [EnterTask]),
+    InSlot('tasks', [TaskList])
+  ]]);
+</code></pre>
+
+<p>where :</p>
+
+<ul>
+<li><code>ProjectTaskListContainer</code> is a container component which allocates children content into their
+slots and applies some styling</li>
+<li><code>ToggleButton</code> handle the tasks filter (values to be picked within <code>All</code>, <code>Open</code>, <code>Done</code>)</li>
+<li><code>EnterTask</code> allows the user to enter a new task for the active project</li>
+<li><code>TaskList</code> displays a list of project tasks, taking into account the task filter set by the user</li>
+</ul>
+
+<p>Note again how the slot mechanism allows to separate a template (fixed part of the target
+<code>vTree</code>), from the contents filling that template (variable part). It is important to become
+familiar with the mechanism, as it is fundamental to divide the user interface in ever smaller
+and isolated pieces. Pay attention also to how slots are declared : either directly through the
+slot module, or with the <code>InSlot</code> combinator. The latter is useful in combination with other
+components which do not declare slots for their DOM content, for instance generic components.
+<code>InSlot</code> can also be used to override existing slots for a given component&rsquo;s DOM content.</p>
+
+<p>Note the use of the utility function <a href="https://github.com/brucou/component-combinators/blob/master/src/utils.js#L1118"><code>vLift</code></a>, which takes a <code>Vtree</code> and lifts it into a component (whose only sink is a DOM sink emitting that <code>vTree</code>).</p>
+
+<p>Let&rsquo;s go in further details about the <code>EnterTask</code> component (illustrating domain driver write
+actions), and the <code>ToggleButton</code> component (illustrating local state driver actions).</p>
+
+<h2 id="adding-a-task">Adding a task</h2>
+
+<p>The <code>EnterTask</code> has obvious specifications :</p>
+
+<table>
+<thead>
+<tr>
+<th>Events</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>INIT</td>
+<td>DOM : display input field and <code>Add</code> button</td>
+</tr>
+
+<tr>
+<td>click on <code>Add</code> button</td>
+<td>domainAction$ : add a new task to the project&rsquo;s tasks entity</td>
+</tr>
+
+<tr>
+<td></td>
+<td>domainAction$ : add a new activity to the project&rsquo;s activity entity</td>
+</tr>
+</tbody>
+</table>
+
+<p>The relevant state is constituted of :</p>
+
+<ul>
+<li>relevant information about the project under review</li>
+<li>relevant information about the user (activities are linked to users)</li>
+<li>task description as found in the input field</li>
+</ul>
+
+<p>We will write the <code>EnterTask</code> component as follows :</p>
+
+<pre><code class="language-javascript">export function EnterTask(sources, settings) {
+  let key = 0;
+  const { projectFb$, user$, document } = sources;
+  const { [ROUTE_PARAMS]: { projectId } } = settings;
+  const taskEnterButtonClick$ = sources[DOM_SINK].select(taskEnterButtonSelector).events('click')
+  // NOTE : is event -&gt; share
+    .share();
+
+  // NOTE :: we use a key here which changes all the time to force snabbdom to always render the
+  // input vNodes. Because we read from the actual DOM, the input vNodes are no longer the
+  // soruce of truth for the input state. From a snabbdom point of view, without that key, we
+  // render two exact same vNodes and hence it does not do anything. So we have to force the 
+  // update by making the successive vNodes differ.
+  return {
+    [DOM_SINK]: taskEnterButtonClick$
+      .map(_ =&gt; renderTaskEntryArea(++key))
+      .startWith(renderTaskEntryArea(++key)),
+    domainAction$: taskEnterButtonClick$
+      .do(preventDefault)
+      .withLatestFrom(projectFb$, user$, (ev, projectFb, user) =&gt; {
+        const {fbIndex : projectFbIndex, project} = projectFb;
+        const tasks = project.tasks;
+        const newTaskPosition = tasks.length;
+        const nr = tasks.reduce((maxNr, task) =&gt; task.nr &gt; maxNr ? task.nr : maxNr, 0) + 1;
+        // NOTE : has to be computed just before it is used, otherwise might not get the current
+        // value
+        const _taskEnterDescription = getInputValue(document, taskEnterInputSelector);
+        const taskEnterDescription = _taskEnterDescription ? _taskEnterDescription : 'Task';
+
+        // NOTE : We have two domain actions to perform here
+        return $.from([{
+          context: TASKS,
+          command: ADD_NEW_TASK,
+          payload: {
+            projectFbIndex,
+            newTask: taskFactory(taskEnterDescription, newTaskPosition, nr),
+            tasks
+          }
+        }, {
+          context: ACTIVITIES,
+          command: LOG_NEW_ACTIVITY,
+          payload: activityFactory({
+            user,
+            time: +Date.now(),
+            subject: projectId,
+            category: 'tasks',
+            title: 'A task was added',
+            message: `A new task &quot;'A task was added'&quot; was added to #${projectId}.`
+          })
+        }
+        ])
+      })
+      .switch()
+  }
+}
+</code></pre>
+
+<p>Note how we use the domain update driver, and request methods execution on domain entities.</p>
+
+<h2 id="setting-the-task-filter">Setting the task filter</h2>
+
+<p>Specifications for the <code>ToggleButton</code> component are as follows :</p>
+
+<table>
+<thead>
+<tr>
+<th>Events</th>
+<th>State</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>INIT</td>
+<td>task filter</td>
+<td>DOM : display all tabs, emphasizing the tab corresponding to the task filter (i.e. active tab)</td>
+</tr>
+
+<tr>
+<td>click on a tab</td>
+<td>task filter</td>
+<td>local state : update the task filter</td>
+</tr>
+</tbody>
+</table>
+
+<p>We will use the in-memory store driver to keep track of the task filter. As the
+ task filter will also be used by the <code>TaskList</code> component to filter out the project&rsquo;s tasks,
+ it needs to be accessible by several components which are not in a parent/child relationship.
+ There are basically two ways to handle this. The first one is to create and inject that piece
+ of state at the closest ancestor level (this would be here at <code>ProjectTaskList</code> level). The second
+ one is to create that piece of state at the global level (i.e. cutting across the component
+ hierarchy - that is what the in-memory store is),
+ and access it anywhere necessary. We chose the second solution for didactic purposes
+ (injecting <code>tasksFilter$</code>), as an example of use of the in-memory store driver. Concretely, the
+ breakdown is as follows :</p>
+
+<pre><code class="language-javascript">export const ToggleButton =
+  InjectSourcesAndSettings({
+      sourceFactory: tasksFilter$,
+      settings: tasksButtonGroupSettings
+    }, tasksButtonGroupSettings.buttonGroup.labels.map((buttonLabel, index) =&gt; {
+      return function (sources, settings) {
+        return ButtonFromButtonGroup(sources, merge(settings, {
+          buttonLabel,
+          index
+        }))
+      }
+    })
+  );
+</code></pre>
+
+<p>where the injected state is :</p>
+
+<pre><code class="language-javascript">export function getStateInStore(context, sources, settings) {
+  const {storeAccess, storeUpdate$} = sources;
+
+  return  storeAccess.getCurrent(context)
+    .concat(storeUpdate$.getResponse(context).map(path(['response'])))
+    // NOTE : this is a behaviour
+    .shareReplay(1)
+}
+export function tasksFilter$(sources, settings) {
+  return {
+    taskFilter$: getStateInStore(TASKS_FILTER, sources, settings)
+      .map(prop('filter'))
+      // In case the `TASKS_FILTER` entity has changed but the tasks filter property has not
+      .distinctUntilChanged()
+  }
+}
+</code></pre>
+
+<p>Note how we combine the store read and write drivers (<code>storeAccess</code>, <code>storeUpdate$</code>) to get<br />
+a <code>taskFilter$</code> which emits the current value of the task filter and then the new values of the
+task filter, every time that value changes. To ensure this, we listen on responses to
+im-memory entity update requests. Such responses are objects which hold the updated entity in the
+<code>response</code> property. For extra details, refer to the <a href="https://github.com/brucou/component-combinators/blob/master/examples/AllInDemo/src/inMemoryStore/index.js#L21">configuration</a>
+ of the in-memory driver, and at the documentation for the <a href="/projects/component-combinators/actiondriver/">domain <code>Action</code> driver</a>.</p>
+
+<p>The <code>ButtonFromButtonGroup</code> is a component which will display a button with a label passed
+through <code>settings</code> and update the task filter when the button is clicked :</p>
+
+<pre><code class="language-javascript">const updateTaskTabButtonGroupStateAction = label =&gt; ({
+    context: TASKS_FILTER,
+    command: PATCH,
+    payload: [
+      { op: &quot;add&quot;, path: '/filter', value: label },
+    ]
+  });
+
+function ButtonFromButtonGroup(sources, settings) {
+  const { taskFilter$ } = sources;
+  const { buttonLabel, index, buttonGroup: { labels, namespace, buttonClasses } } = settings;
+  const buttonGroupSelector = makeButtonGroupSelector({ label: buttonLabel, index, namespace });
+
+  const events = {
+    click: sources[DOM_SINK].select(buttonGroupSelector).events('click')
+      .map(always(buttonLabel))
+  };
+  const state$ = taskFilter$;
+  
+  return {
+    [DOM_SINK]: state$.map(taskFilter =&gt; {
+      const classes = ['']
+        .concat(buttonClasses(taskFilter, buttonLabel))
+        .join('.') + buttonGroupSelector;
+
+      return button(classes, buttonLabel)
+    }),
+    storeUpdate$: events.click
+      .withLatestFrom(state$, (label, taskFilter) =&gt; ({ label, taskFilter }))
+      // no need to do anything if clicking on a button already active
+      .filter(x =&gt; x.label !== x.taskFilter)
+      .map(prop('label'))
+      .map(updateTaskTabButtonGroupStateAction)
+  }
+}
+</code></pre>
+
+<p>Note that <a href="https://github.com/brucou/component-combinators/blob/master/examples/AllInDemo/src/inMemoryStore/index.js#L29">in-memory store driver</a> uses <a href="http://jsonpatch.com/">json patch</a> to describe the updates to the in-memory entity.</p>
+
+<p>For the full code and running demo, see <a href="https://github.com/brucou/component-combinators/tree/project-management-app-step-4/examples/AllInDemo">here</a>.</p>
+
+<h2 id="displaying-a-list-of-tasks">Displaying a list of tasks</h2>
+
+<p>A <code>TaskList</code> is a list of tasks. We inject the corresponding state, compute the component with
+<code>ListOf</code> combinator, and affect the DOM content to the corresponding slot :</p>
+
+<pre><code class="language-javascript">export const TaskList = InjectSourcesAndSettings({ sourceFactory: taskListStateFactory }, [TaskListContainer, [
+  InSlot('task', [
+    ForEach({ from: 'filteredTasks$', as: 'filteredTasks' }, [
+      ListOf({ list: 'filteredTasks', as: 'filteredTask' }, [
+        EmptyComponent,
+        Task
+      ])
+    ])
+  ])
+]]);
+</code></pre>
+
+<p>a <code>Task</code> is made of a checkbox to change its status, a button to allow deletion, another button
+to allow task edition, and the task information. Clicking on a task detail button should route
+the user to another screen where he can modify the task information. The breakdown is hence
+as follows :</p>
+
+<pre><code class="language-javascript">function TaskContainer(sources, settings) {
+  const { filteredTask: { done, title }, listIndex } = settings;
+  const coreVnodes = div('.task', [
+    div(&quot;.task__l-box-a&quot;, { slot: 'checkbox' }, []),
+    div(&quot;.task__l-box-b&quot;, [
+      div(&quot;.task__title&quot;, { slot: 'editor' }, []),
+      button(taskDeleteSelector(listIndex)),
+      div('.task-infos', { slot: 'task-infos' }, []),
+      div({ slot: 'task-link' }, []),
+    ])
+  ]);
+
+  return {
+    [DOM_SINK]: $.of(
+      done
+        ? div(`.task--done`, [coreVnodes])
+        : coreVnodes
+    )
+  }
+}
+const Task = InjectSourcesAndSettings({
+  settings: function (settings) {
+    const { filteredTask: { done, title }, listIndex } = settings;
+
+    return {
+      checkBox: { isChecked: !!done, namespace: [TASKS, listIndex].join('_'), label: undefined },
+      editor: { showControls: true, initialEditMode: false, initialContent: title }
+    }
+  }
+}, [TaskContainer, [
+  InSlot('checkbox', [
+    Pipe({}, [
+      CheckBox,
+      ComputeCheckBoxActions
+    ]),
+  ]),
+  InSlot('editor', [
+    Pipe({}, [
+      Editor,
+      ComputeEditorActions
+    ]),
+  ]),
+  InSlot('task-infos', [
+    TaskInfo,
+  ]),
+  TaskDelete,
+  InSlot('task-link', [
+    TaskLink
+  ]),
+]]);
+</code></pre>
+
+<p>Using <code>CheckBox</code> and <code>Editor</code> generic UI components requires us to do some adaption of input,
+and output to fit their APIs. This allows to illustrate two interesting techniques :</p>
+
+<ul>
+<li>Inputs (here <code>settings</code>) are adapted through <code>InjectSourcesAndSettings</code> ahead of using the
+generic UI components</li>
+<li>Outputs are adapted through the use of the <code>Pipe</code> combinator. For instance, <code>Editor</code> returns a
+<code>save$</code> sink which needs to be mapped to a <code>domainAction</code> sink to update the corresponding domain
+entity. As a matter of fact, the <a href="/projects/component-combinators/pipe"><code>Pipe</code> combinator</a> allows to pass sinks of a component in the
+pipe as sources for the next component in the pipe. In the mentioned case, for instance the
+output adaptation is performed by <code>ComputeEditorActions</code>.</li>
+</ul>
+
+<h1 id="tip-how-to-write-a-component">TIP : How to write a component</h1>
+
+<p>Within the chosen architecture (cycle), writing a <em>leaf</em> component, i.e. a component
+which is not derived from other components, but only from <code>sources</code> and <code>settings</code>, means :</p>
+
+<ul>
+<li>having clear specifications as per the reactive behaviour to implement
+
+<ul>
+<li>from the equation <code>actions = f(state, events)</code> :</li>
+<li>identify the relevant events the component reacts to</li>
+<li>identify the actions to trigger in response to events</li>
+<li>identify the necessary pieces of state to compute the actions from the events</li>
+</ul></li>
+<li>decide on the parameterization of the component
+
+<ul>
+<li>this means deciding which parts, if any, of the component&rsquo;s behaviour will be parameterizable
+through the component&rsquo;s <code>settings</code> property</li>
+</ul></li>
+<li>compute the events
+
+<ul>
+<li>while doing so, ensure in particular that events are coupled to unique selectors : this is
+particular important when operating within the cycle architecture where events are decoupled
+from the elements that originate them.</li>
+</ul></li>
+<li>compute the necessary pieces of state</li>
+<li>compute the actions, as a function of the events and pieces of state</li>
+</ul>
+
+<h2 id="example">Example</h2>
+
+<p>We want to implement a <code>NavigationItem</code> component with the following specifications :</p>
+
+<ul>
+<li>displays a project</li>
+<li>parameterized by a project title and a route corresponding to that project (termed project link)</li>
+<li>if the current route corresponds to the project link, emphasize visually that project</li>
+</ul>
+
+<p>This gives us, the following reactive function :</p>
+
+<table>
+<thead>
+<tr>
+<th>Events</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>INIT (route == project link)</td>
+<td>DOM : display project title</td>
+</tr>
+
+<tr>
+<td>INIT (route != project link)</td>
+<td>DOM : display emphasized project title</td>
+</tr>
+
+<tr>
+<td>click on project title</td>
+<td>router : navigate to the project link</td>
+</tr>
+</tbody>
+</table>
+
+<p>This helps us identifying the pieces of state part of the reactive function :</p>
+
+<table>
+<thead>
+<tr>
+<th>Events</th>
+<th>State</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>INIT</td>
+<td>isLinkActive : true (i.e. <code>route == project link</code>)</td>
+<td>DOM : display project title</td>
+</tr>
+
+<tr>
+<td>INIT</td>
+<td>isLinkActive : false (i.e. <code>route != project link</code>)</td>
+<td>DOM : display emphasized project title</td>
+</tr>
+
+<tr>
+<td>click on project title</td>
+<td>&ndash;</td>
+<td>router : navigate to the project link</td>
+</tr>
+</tbody>
+</table>
+
+<p>We assure the unicity of the selector for the click event, by coupling the corresponding element
+to the project link, which is unique as per the specification.</p>
+
+<p>This leads to the implementation below :</p>
+
+<pre><code class="language-javascript">function NavigationItem(sources, settings) {
+  const { url$ } = sources;
+  const { project: { title, link } } = settings;
+  const linkSanitized = link.replace(/\//i, '_');
+
+  const state$ = url$
+    .map(url =&gt; url.indexOf(link) &gt; -1)
+    .shareReplay(1);
+
+  return {
+    [DOM_SINK]: state$.map(isLinkActive =&gt; {
+      const isLinkActiveClass = isLinkActive ? '.navigation-section__link--active' : '';
+
+      return a(
+        `${isLinkActiveClass}.navigation-item.navigation-section__link.${linkSanitized}`,
+        { attrs: { href: link }, slot: 'navigation-item' },
+        title)
+    }),
+    // NOTE : we avoid having to isolate by using the link which MUST be unique over the whole
+    // application (unicity of a route)
+    router: sources.DOM.select(`.navigation-section__link.${linkSanitized}`).events('click')
+      .do(preventDefault)
+      .map(always('/' + link + '/'))
+  }
+}
+</code></pre>
+
+<h1 id="tip-how-to-write-a-component-combinator">TIP : How to write a component combinator</h1>
+
+<p>We have already given two examples of component combinators (<a href="/posts/applying-componentization-to-reactive-system---sample-application/#navigation-combinator">here</a>, and <a href="/posts/applying-componentization-to-reactive-system---sample-application/#navigationsection-combinator">here</a>). The general
+process is as follows :</p>
+
+<ul>
+<li>having clear specifications as per the combining behaviour to implement
+
+<ul>
+<li>how is the component combinator to be parameterized ?</li>
+<li>is a container component necessary ?</li>
+<li>what are the contracts which settings or component tree must fulfill?</li>
+<li>how are combined components&rsquo; sinks?</li>
+<li>default combining functions are sufficient</li>
+<li>specific combining functions are necessary</li>
+</ul></li>
+<li>implement the sought behaviour
+
+<ul>
+<li>reuse as much as possible existing combinators</li>
+<li>select the most appropriate form of the <code>m</code> combinator (out of the three reducing patterns)</li>
+<li>for instance <code>= m(componentCombinatorSpec, componentCombinatorSettings,
+childrenComponents | componentTree)</code></li>
+<li>understanding <code>m</code> default reducing functions is paramount : often times, they have the
+behaviour that is sought for</li>
+</ul></li>
+</ul>
+
+<h1 id="generic-reusable-components">Generic, reusable components</h1>
+
+<p>Components developed for a specific application usually have to be generalized to make them
+reusable. The generalized component can then be adapted, specialized or parameterized to be used
+for the specific application use case.</p>
+
+<p>For instance, in our application&rsquo;s UI, we have a checkbox on which a click leads to miscellaneous
+actions on the domain model. Abstracting out the actions specific to the domain model, we can
+build a reusable checkbox UI component, where the clicks will emit a dummy action passing on the
+status of the checkbox (checked/unchecked).</p>
+
+<p>That generic UI checkbox can then be reused in different contexts, within the application, or in
+other applications, by specifying how the clicks translates into actions on the given domain
+model. The UI checkbox component is <strong>adapted</strong> to the application under development.</p>
+
+<p>In other cases, the generalized component will be specialized (the <code>m</code> combinator is such a case,
+ where the programmer can specialize the reduction of the component tree to one of three patterns).</p>
+
+<p>In yet other cases, the generalized component behaviour will be configured by parameterization
+through the component settings.</p>
+
+<p>In our application, we have identified the following reusable UI components :</p>
+
+<ul>
+<li><code>CheckBox</code> component
+
+<ul>
+<li>for each click on the checkbox, passes the state of that checkbox<br /></li>
+</ul></li>
+<li><code>Editor</code> component
+
+<ul>
+<li>allows to define an editable user content zone where the user can modify, save, delete
+content.</li>
+</ul></li>
+</ul>
+
+<p>Potential candidates for further refactoring into reusable components are :</p>
+
+<ul>
+<li>ToggleButton (<em>xor</em> button group component)</li>
+<li>EnterTask (input entry)</li>
+</ul>
+
+<p>A component such as <code>TaskInfo</code> is not a fruitful target for a generalization that allows to reuse
+it in other domains, as its behaviour seems very much tied (coupled) to the application&rsquo;s domain
+model. However, should that component be needed with slight modifications more than twice (<a href="https://en.wikipedia.org/wiki/Rule_of_three_(computer_programming)">rule of three</a> in our application, we would have considered
+writing a generalized version of the component.</p>
+
+<p>Ideally, there is already at hand a component (UI or domain) )library that is already tested, and
+documented. That could be the case for example for UI components, such as those exposed
+previously. This could also be the case if domain experts have succeeded in identifying repeating
+ patterns in their domain, and produced a domain-specific component library. In the general case,
+  the software designer will have to find and assess the abstraction/generalization opportunities presented to
+ him. Those opportunities are generally identified while refactoring. As explained in a former <a href="/posts/componentization-against-complexity/#barriers-to-reuse">article</a>, refactoring for reuse has a
+ cost, and the possible benefits to be derived have to be weighted against that cost.</p>
+
+<p>For illustration purposes, here is part of the source code for the <code>CheckBox</code> component.</p>
+
+<pre><code class="language-javascript">export function CheckBox(sources, settings) {
+  const { checkBox: { label: _label, namespace, isChecked } } = settings;
+  const checkBoxSelector = '.' + [defaultTo(defaultNamespace, namespace), ++counter].join('-');
+  const __label = defaultTo('', _label);
+
+  assertContract(isCheckBoxSettings, [settings.checkBox], `CheckBox : Invalid check box settings! : ${format(settings.checkBox)}`)
+
+  const events = {
+    'change' : sources[DOM_SINK]
+      .select(checkBoxSelector).events('change')
+      .map(ev =&gt; ev.target.checked)
+  };
+
+  return {
+    [DOM_SINK]: $.of(div('.checkbox', [
+      label(labelSelector, [
+                input([inputSelector, checkBoxSelector].join(''), {
+                  &quot;attrs&quot;: {
+                    &quot;type&quot;: &quot;checkbox&quot;,
+                    &quot;checked&quot;: isChecked,
+                  }
+                }),
+                span(checkBoxTextSelector, __label)
+              ])
+    ])),
+    isChecked$: events.change
+  }
+}
+</code></pre>
+
+<p>The <code>isChecked$</code> sink can later on be used in coordination with the <code>Pipe</code> combinator to produce
+the desired sink.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>We have showcased our componentization model, and the accompanying combinator library. By
+dividing the target reactive system into smaller components, and expliciting the event-state-action
+ relation, it is possible to reach a breakdown where each leaf component is easy to write. At the
+  same time, those relatively independent components are glued into the cohesive whole that is
+  the target application, in a way that is made both concise and readable by the use of combinators.</p>
+<div class="footnotes">
+
+<hr />
+
+<ol>
+<li id="fn:behaviour">The reason why we need both the route change event and the route state is that sometimes we want to get the current route without reacting to a route change, and the best way to achieve this is to use <code>shareReplay(1)</code> in connection with <code>sample</code> or <code>withLatestFrom</code>. 
+ <a class="footnote-return" href="#fnref:behaviour"><sup>[return]</sup></a></li>
+<li id="fn:routechange">The corresponding change could be anticipated by designing the main panel to allow for parameterization of these routes. This would ensure that a change in <code>SidePanel</code> does not entail a change in <code>MainPanel</code> implementation, but rather a change in parameterization (we have decided not to refactor our sample application in that direction though, to not distract the learner with implementation details)
+ <a class="footnote-return" href="#fnref:routechange"><sup>[return]</sup></a></li>
+</ol>
+</div>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/posts/a-componentization-framework-for-cyclejs/">
+            <img class="icon-text" src="/img/prev.svg"/>A componentization model for cyclejs</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/posts/component-models-for-user-interfaces-implementation---a-comparison/">Component models for user interfaces implementation - a comparison<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#target-application">Target application</a></li>
+<li><a href="#step-0-set-up">Step 0 : set up</a>
+<ul>
+<li><a href="#domain-model">Domain model</a></li>
+<li><a href="#interfaced-systems-drivers">Interfaced systems&rsquo; drivers</a></li>
+</ul></li>
+<li><a href="#step-1-sidepanel-navigation-and-mainpanel">Step 1 : SidePanel (navigation) and MainPanel</a>
+<ul>
+<li><a href="#tip-what-makes-a-good-breakdown">TIP : What makes a good breakdown</a></li>
+</ul></li>
+<li><a href="#step-2-sidepanel">Step 2 : SidePanel</a>
+<ul>
+<li><a href="#slots-and-container-components">Slots and container components</a></li>
+<li><a href="#navigation-combinator">Navigation combinator</a></li>
+<li><a href="#navigationsection-combinator">NavigationSection combinator</a></li>
+<li><a href="#listofitemscomponent-component">ListOfItemsComponent component</a></li>
+</ul></li>
+<li><a href="#step-3-main-panel">Step 3 : Main panel</a>
+<ul>
+<li><a href="#project-component">Project component</a></li>
+</ul></li>
+<li><a href="#step-4-projecttasklist-component">Step 4 : <code>ProjectTaskList</code> component</a>
+<ul>
+<li><a href="#adding-a-task">Adding a task</a></li>
+<li><a href="#setting-the-task-filter">Setting the task filter</a></li>
+<li><a href="#displaying-a-list-of-tasks">Displaying a list of tasks</a></li>
+</ul></li>
+<li><a href="#tip-how-to-write-a-component">TIP : How to write a component</a>
+<ul>
+<li><a href="#example">Example</a></li>
+</ul></li>
+<li><a href="#tip-how-to-write-a-component-combinator">TIP : How to write a component combinator</a></li>
+<li><a href="#generic-reusable-components">Generic, reusable components</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+

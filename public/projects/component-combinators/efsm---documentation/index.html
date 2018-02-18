@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>EFSM combinator - documentation - Technuflections</title>
+
+		<meta name="description" content="Motivation In a previous article, we introduced the rationale behind using state machines in the context of UI programming. We introduce here our state machine library in the context of our component combinator library for cyclejs. We finish with a roadmap including new features for the next iteration of the library.
+Extended finite state machine library We propose a state machine library which features :
+ streams to represent a possibly infinite sequence of data which can be obtained asynchronously an extended finite state machine with :  transitions associated to asynchronous actions with run-to-completion semantics state entry actions associated to dataflow components  state machine component is a dataflow component following cyclejs conventions  With this library, it is possible to orchestrate a sequence of screens according to the control logic enclosed in the state machine.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>EFSM combinator - documentation</h1>
+	<h5> Last modified on
+		Feb 17, 2018
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			19 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="motivation">Motivation</h1>
+
+<p>In a <a href="/projects/component-combinators/efsm---the-case-for-ui-programming/">previous article</a>, we introduced the rationale behind using state machines in the
+context of UI programming. We introduce here our state machine library in the context of our
+component combinator library for cyclejs. We finish with a roadmap including new features for the
+ next iteration of the library.</p>
+
+<h1 id="extended-finite-state-machine-library">Extended finite state machine library</h1>
+
+<p>We propose a state machine library which features :</p>
+
+<ul>
+<li>streams to represent a possibly infinite sequence of data which can be obtained asynchronously</li>
+<li>an extended finite state machine with :
+
+<ul>
+<li>transitions associated to asynchronous actions with run-to-completion semantics</li>
+<li>state entry actions associated to dataflow components</li>
+</ul></li>
+<li>state machine component is a dataflow component following <code>cyclejs</code> conventions</li>
+</ul>
+
+<p>With this library, it is possible to orchestrate a sequence of screens according to the control logic enclosed in the state machine. The implementation of each screen takes the form of a <code>cyclejs</code> dataflow component which has: access to the state machine model; a predefined interface to the external world; and can pass actions back to the external world (for instance an action interpreter in charge of executing the actions).
+This makes this library a good choice to implement wireframe flows such as the ones included for the sample application.</p>
+
+<p>We will make all these assertions more clear by :</p>
+
+<ul>
+<li>describing the <code>cyclejs</code> approach to reactive programming, and the associated terminology</li>
+<li>presenting the APIs</li>
+</ul>
+
+<h2 id="reactive-programming-the-cyclejs-way">Reactive programming the <code>cyclejs</code> way</h2>
+
+<p>We have seen previously how <code>actions</code> can be related to <code>events</code> via a pure function. <code>cyclejs</code> follows a similar approach. But first some terminology :</p>
+
+<ul>
+<li>A <strong>dataflow component</strong> is a <strong>function</strong> which takes as only input an object, and returns another object. The input object must allow to connect and listen to event sources of interest, the output object is a representation of the actions that needs to be processed by the action interpreter.</li>
+<li>In the context of <code>cyclejs</code>, the output object is a map (action type -&gt; stream of action data). Its type is called <code>Sinks</code> (<code>:: HashMap ActionName (Stream ActionData)</code>)</li>
+<li>In the context of <code>cyclejs</code>, the input object shape can vary, but invariably offers an interface to listen on specific events. Its type is called <code>Sources</code>.</li>
+</ul>
+
+<p>So we have <code>actions = f(sources)</code>, where <code>f</code> is generally not a pure function, as the mechanics of event subscriptions may feature effectful operations (read effects or else). However :</p>
+
+<ul>
+<li>the <code>cyclejs</code> dataflow component formulation is sufficiently close from the purely functional reactive <code>actions = f(events)</code> to be useful in practical cases.</li>
+<li>the presence of a polymorphic <code>sources</code> object and read effects can be worked around at testing time by the usual techniques : mocking, stubbing, etc.</li>
+<li><code>cyclejs</code> comes bundled with mocking facilities, and a few action interpreters, to effectively test and run the implemented reactive application</li>
+</ul>
+
+<p>We will express our state machine component as a <code>cyclejs</code> dataflow component, with an extra <code>settings</code> parameter for easy parameterization : <code>Component :: Sources -&gt; Settings -&gt; Sinks</code></p>
+
+<h2 id="apis">APIs</h2>
+
+<p>The APIs is composed of the state machine factory function, and a few utilities.</p>
+
+<h3 id="makefsm-events-transitions-entrycomponents-fsmsettings-component"><code>makeFsm :: Events -&gt; Transitions -&gt; EntryComponents -&gt; FsmSettings -&gt; Component</code></h3>
+
+<p>Creates and returns a state machine component whose behaviour is defined by :</p>
+
+<ul>
+<li>the events handled by the state machines</li>
+<li>the control states of the state machine</li>
+<li>the associated components to be started upon entry in the control states</li>
+<li>the transitions between states</li>
+<li>the state machine settings</li>
+</ul>
+
+<p>It generally goes like this:</p>
+
+<ul>
+<li>an initial event is fired upon initialization of the state machine which leads to an initial state</li>
+<li>the state machine changes state as a function of the incoming events it is configured to pay attention to, and the guards and transitions defined for the current state it is in</li>
+<li>on entering a new state, the corresponding entry dataflow component is started
+
+<ul>
+<li>those entry dataflow components can have their private state, as usual, that no other component will have access to</li>
+<li>however, entry dataflow components can only have a read access to their enclosing context (i.e. the model associated to the state machine)</li>
+<li>entry dataflow components are not aware of and do not control their lifecycle. That is done by the state machine component</li>
+</ul></li>
+<li>entry dataflow components are terminated when a transition is started (<strong>TO DO : CHECK - or when a transition is completed?</strong>)</li>
+</ul>
+
+<p>Going back to the volunteer application, the example implementation uses a state machine which sequences the application into 5 steps (states) to which correspond 5 screens (entry dataflow components), and controls the transition from one state to another according to configured application-specific rules.</p>
+
+<h3 id="events">Events</h3>
+
+<p>An event has a name and is mapped to an event factory. An event factory is the function which actually creates the stream of event objects for that event name, from the <code>sources</code> and <code>settings</code> passed in arguments to the state machine data flow component. <code>settings</code> can hence be used to parameterize to some extent the event stream creation.</p>
+
+<p>Event names can be any valid identifier, except the reserved identifiers used for the good behaviour of the state machine (cf. contracts section).</p>
+
+<h4 id="types">Types</h4>
+
+<ul>
+<li><code>Events :: (HashMap EventName Event) | {}</code></li>
+<li><code>Event :: Sources -&gt; Settings -&gt; Stream EventData</code></li>
+<li><code>EventName :: String</code></li>
+<li><code>EventData :: *</code></li>
+</ul>
+
+<h4 id="contracts">Contracts</h4>
+
+<ul>
+<li>The <code>EV_INIT</code> event is reserved and <strong>MUST NOT</strong> be used in user-defined event configuration (FOOTNOTE : the corresponding event name string is found in the declaration of <code>INIT_EVENT_NAME</code>)</li>
+<li>For the <code>EV_INIT</code> event, there <strong>MUST</strong> be defined at least one transition</li>
+</ul>
+
+<h4 id="description">Description</h4>
+
+<p>Events to be processed by the state machine are defined through event factories. The <code>events</code> parameter maps an event name to an event factory which once executed will return a stream of events associated to that event name.</p>
+
+<p>The event factory receives the same <code>sources</code> and <code>settings</code> arguments than the state machine component, hence is injected the same dependencies than the state machine component.</p>
+
+<p><strong>NOTE</strong> : the stream of events returned by the factory <strong>MAY</strong> have an immediate starting event. However, there should only ever be one of such (<code>FETCH</code> event for instance), as all starting events for all stream of events will be executed in order of definition, right after the reserved initial event - that might not be the desired order. Also, the library does not offer the possibility for now to have immediate events triggered automatically by entering a state (no transient state, no immediate preemption).</p>
+
+<h3 id="transitions">Transitions</h3>
+
+<p>The <code>Transitions</code> data structure is the most complex object and encodes most of the behaviour of the state machine. It is a hashmap whose each entry encodes the logic for a given transition between an origin state and a target state.</p>
+
+<p>Every such entry has a name and is mapping to an object holding :</p>
+
+<ul>
+<li>the origin state for the transition</li>
+<li>the event that triggers the transition</li>
+<li>a data structure which contains the set of possible target states and the conditions necessary to select a target state to transition to.</li>
+</ul>
+
+<p>In that data structure, for each entry, we have :</p>
+
+<ul>
+<li>the guard that applies to the triggering event.</li>
+<li>an action request to execute prior to transitioning to a target state (optional)</li>
+<li>a data structure which aims at defining the logic to apply according to the execution of the action request. This includes
+
+<ul>
+<li>a guard applied to the action response</li>
+<li>the target state to transition to if the guard is fulfilled</li>
+<li>a model update function which gives the updates to apply to the state machine encapsulated model</li>
+</ul></li>
+</ul>
+
+<p><strong>Event guards</strong> : Predicate function which takes the event data for the triggering event, the current value of the state machine&rsquo;s encapsulated model, and returns a boolean which enables or invalidates the associated transition.</p>
+
+<p>If no event guards are satisfied, then the state machine does not transition and remains in the same state.</p>
+
+<p><strong>Action guards</strong> : Predicate function which takes the action response for the triggered action request, the current value of the state machine&rsquo;s encapsulated model, and returns a boolean which enables or invalidates the associated transition.</p>
+
+<p>Once an action request has been emitted, the state machine waits for a response. Once an action response is received, the state machine must transition to some state, otherwise it would remain stuck forever in an intermediary state. This means that at least one action guard must be satisfied, otherwise an exception will be raised.</p>
+
+<p>Action guards allow to have a treatment differentiated per the action response. A common use case is to deal with action requests which have failed. One guard can test for correct execution of the action request, and associate with a success state, another guard can test for the opposite case, and associate with an error state.</p>
+
+<p><strong>Model update functions</strong> : Model update functions compute the set of update operations to perform on the model, from the triggered event data, the executed action response (if any), the current value of the model, and the <code>settings</code> passed through the state machine dataflow component.</p>
+
+<p>As such, model update functions do not modify the model, but rather computes a list of update operations to perform. These are the typical CRUD operations and take inspiration from <code>JSON Patch</code> (RFC 6902) which is a format for describing changes to a JSON document. It is hence considered safer to have a model which is a valid JSON document (i.e. avoid functions and other constructs which are not JSON-serializable). This is not a hard requirement at the present, but it might be in future versions.</p>
+
+<p>The rationale for this is two-pronged:
+- we treat the encapsulated model as an externally inmutable object
+- we can store (for debugging or else) the update operations, and replay them at will to rewind to a previous version of the model (<strong>not implemented yet</strong>).</p>
+
+<p><strong>Action requests</strong> : Action requests are specified via a data structure containing the driver responsible for interpreting the action request, and a request factory function which takes the triggered event data and the current value of the state machine model to produce the actual request. That request has three properties: <code>context</code>, <code>command</code>, <code>payload</code>. The <code>context</code> property serves to parameterize/refine the <code>command</code>, and the <code>payload</code> holds parameters for the command.</p>
+
+<p><strong>NOTE</strong> : This is an arbitrary choice, we could have included <code>context</code> in the <code>payload</code>. We chose to extract it out to make the refinement meaning more apparent. For instance, we have an <code>update</code> command in the sample application, with a <code>userApplication</code> context, which means the command is <code>update userApplication</code>, and the parameters are <code>payload</code>.</p>
+
+<p><strong>Action responses</strong> : The state machine will be reading responses for requests on the same source name than the driver name. That is if the driver for the request is <code>domainAction$</code>, then the response will be expected on <code>sources.domainAction$</code>. That response has a specific form : it must include the original request object, so the response can be reconciliated with its originating request. The rest of the properties of the request is arbitrarily set to <code>response</code> and <code>err</code> to indicate success or failure of the request.</p>
+
+<p><strong>NOTE</strong> : In the current version of the library, an action request <strong>MUST</strong> be associated to a response. The state machine will <strong>WAIT</strong> for that response, hence it will block if no such response occurs.</p>
+
+<h4 id="types-1">Types</h4>
+
+<ul>
+<li><code>Transitions :: HashMap TransitionName TransitionOptions</code></li>
+<li><code>TransitionOptions :: Record {</code>
+
+<ul>
+<li><code>origin_state :: State // Must exist in StateEntryComponents,</code></li>
+<li><code>event :: EventName // Must exist in Events,</code></li>
+<li><code>target_states :: [Transition]</code></li>
+<li><code>}</code></li>
+</ul></li>
+<li><code>Transition :: Record {</code>
+
+<ul>
+<li><code>event_guard :: EventGuard  | Null,</code></li>
+<li><code>re_entry :: Boolean | Null,</code></li>
+<li><code>action_request :: ActionRequest | Null,</code></li>
+<li><code>transition_evaluation :: [TransEval]</code></li>
+<li><code>}</code></li>
+</ul></li>
+<li><code>TransEval :: Record {</code>
+
+<ul>
+<li><code>action_guard :: ActionGuard | Null,</code></li>
+<li><code>target_state :: State // Must exist in StateEntryComponents,</code></li>
+<li><code>model_update :: FSM_Model -&gt; EventData -&gt; ActionResponse -&gt; Settings -&gt; [UpdateOperation]</code></li>
+<li><code>}</code></li>
+</ul></li>
+<li><code>ActionGuard :: Model -&gt; ActionResponse -&gt; Boolean</code></li>
+<li><code>EventGuard :: Model -&gt; EventData -&gt; Boolean</code></li>
+<li><code>ActionRequest :: Record {</code>
+
+<ul>
+<li><code>driver :: SinkName | Null,</code></li>
+<li><code>request :: (FSM_Model -&gt; EventData) -&gt; Request</code></li>
+<li><code>}</code></li>
+</ul></li>
+<li><code>Request : Record {
+context :: *,
+command :: Command,
+payload :: Payload | Null,
+}</code></li>
+<li><code>ActionResponse :: Record {
+request : ActionRequest,
+response : * | Null,
+err : Error | Null,
+}</code></li>
+<li><code>UpdateOperation :: JSON_Patch</code></li>
+<li><code>JSON_Patch :: Op_Add | Op_Remove | Op_Replace | Op_Move | Op_Copy | Op_Test | Op_None</code></li>
+<li><code>Op_Add :: Record { op: &quot;add&quot;, path: JSON_Pointer, value : *}</code></li>
+<li><code>Op_Remove :: Record { op: &quot;remove&quot;, path: JSON_Pointer}</code></li>
+<li><code>Op_Replace :: Record { op: &quot;replace&quot;, path: JSON_Pointer, value: *}</code></li>
+<li><code>Op_Move :: Record { op: &quot;move&quot;, from: JSON_Pointer, path: JSON_Pointer}</code></li>
+<li><code>Op_Copy :: Record { op: &quot;copy&quot;, from: JSON_Pointer, path: JSON_Pointer}</code></li>
+<li><code>Op_Test :: Record { op: &quot;test&quot;, path: JSON_Pointer, value: *}</code></li>
+<li><code>Op_None :: {} | Null</code></li>
+</ul>
+
+<h4 id="contracts-1">Contracts</h4>
+
+<ul>
+<li>Any state defined in the <code>transitions</code> parameter <strong>MUST</strong> be corresponded with an entry in the <code>stateEntryComponents</code> parameter</li>
+<li>if a target state can be the same as an origin state, the <code>re_entry</code> property <strong>MUST</strong>be configured</li>
+<li>if a target state differs from an origin state, the <code>re_entry</code> property <strong>MUST NOT</strong> be configured</li>
+<li>A transition <strong>MAY</strong> have an action response guard</li>
+<li>A transition <strong>MAY</strong> have an event guard</li>
+<li>If a transition between two states have one or several action response guards, then for any incoming events, <strong>at least ONE</strong> of the guards <strong>MUST</strong> pass.</li>
+<li>(events and actions) guard predicates <strong>MUST</strong> be pure functions - or in a more relaxed manner <strong>MAY</strong> have side-effects which do not affect the evaluation of other guards for the same event</li>
+<li>model update functions MUST be pure functions</li>
+<li>To ensure event guards, action guards, model update functions do not update the state machine model, a clone of that model is passed to those functions (<strong>IMPLEMENTED??</strong>)</li>
+<li>All functions part of the transitions configuration must be synchronous functions (event guards, action guards, model updates)</li>
+<li>Run-To-Completion (RTC) semantics : a state machine completes processing of each event before it can start processing the next event
+
+<ul>
+<li>Additional events occurring while the state machine is busy processing an event are dropped</li>
+</ul></li>
+<li>FSM configured functions <strong>MUST NOT</strong> modify the model object parameter that they receive</li>
+<li>FSM configured functions <strong>MUST</strong> be synchronous and immediately compute and return their value</li>
+<li>FSM configured functions <strong>MAY</strong> throw, and that results in the state machine re-throwing the exception</li>
+<li>if <code>action_request</code> property has no driver associated, then the request field <strong>MUST</strong> be null (<strong>implemented??</strong>)</li>
+<li>if <code>action_request</code> property is none then <code>transition_evaluation.action_guard</code> <strong>MUST</strong> be Null  (<strong>implemented??</strong>)</li>
+<li>an action request <strong>MUST</strong> have an action response associated. Otherwise, the state machine will block without end, waiting for a response.</li>
+<li>if an action request features a driver name, that driver name <strong>MUST</strong> be found in the sources.
+Otherwise, the state machine will block without end, waiting for a response. (<strong>implemented??</strong>)</li>
+</ul>
+
+<h4 id="description-1">Description</h4>
+
+<ul>
+<li>The state machine starts in the <code>S_INIT</code> state, and automatically fires the special reserved <code>EV_INIT</code> event. From then onwards, the state machine behavior is determined by its user-defined configuration</li>
+<li>Given that the state machine is in a origin state, and given an incoming event :
+
+<ul>
+<li>when that incoming event does not have a configured transition associated, a warning is issued and the event is discarded. That is the case for not configured user-event but also for responses to requests (arriving for instance while the state machine is not expecting them).</li>
+<li>when that incoming event has a configured transition associated, then :
+
+<ul>
+<li>when there are no event guards, the program behaves as if there was an event guard which is always satisfied (<code>always(true)</code> predicate)</li>
+<li>when there are events guards, they are evaluated in order of declaration (i.e. array order)
+
+<ul>
+<li>when no event guards are satisfied, a warning is issued, and the incoming event is discarded</li>
+<li>when an event guard is satisfied :
+
+<ul>
+<li>when there is an action request, that action request is sent, and the statemachine <strong>WAITS</strong> for a response
+
+<ul>
+<li>when a user event arrives while waiting, a warning is issued, and the user event is discarded</li>
+<li>when a response arrives AND matches the request sent, then
+
+<ul>
+<li>when there is no action guard, the program behaves as if there was an action guard which is always satisfied (<code>always(true)</code> predicate)</li>
+<li>the action guards are executed in order of declaration (i.e. array order)
+
+<ul>
+<li>if no action guard is satisfied an exception is raised!</li>
+<li>if an action guard is satisfied, the state machine&rsquo;s model is updated and transitions to the configured target state</li>
+</ul></li>
+</ul></li>
+<li>when a response arrives AND DOES NOT match the request sent, then a warning is issued and the response is discarded</li>
+</ul></li>
+<li>when there is no action request, the state machine&rsquo;s model is updated and transitions to the configured target state</li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+
+<h3 id="states">States</h3>
+
+<p>Control states are associated to state entry dataflow component factories. Those are functions which takes the current value of the encapsulated model of the state machine and return a regular dataflow component, which can be further parameterized by a <code>settings</code> parameter (optional).
+Upon entry of a state, the mapped dataflow component will be executed, and its sinks (i.e. actions) will be connected to the sinks of the same name of the state machine dataflow component.</p>
+
+<p><strong>entry component initialization</strong> : performed when a target state has been evaluated and the target state is entered. If there is no entry component configured, then no action is taken.</p>
+
+<p><strong>entry component termination</strong> : performed when an action request is emitted, and the control state is left. Note that while the action is being executed, the state machine is in limbo, it is neither in the origin state, nor in the target state.</p>
+
+<p><strong>state re-entry</strong>: when the target state is the origin state, it is possible to configure whether the state entry component must be re-initialized (<code>re_entry : true</code>) or left as is (<code>re_entry : false</code>). I haven&rsquo;t found a case where one would not want to re-execute the entry dataflow component (specially given that it is terminated on leaving the state), but the configuration option will remain there for some time, should that case appear.</p>
+
+<h4 id="types-2">Types</h4>
+
+<ul>
+<li><code>StateEntryComponents :: HashMap State StateEntryComponent</code></li>
+<li><code>StateEntryComponent :: FSM_Model -&gt; Component | Null</code></li>
+<li><code>FSM_Model :: *</code></li>
+<li><code>Component :: Sources -&gt; Settings -&gt; Sinks</code></li>
+<li><code>Sinks :: HashMap SinkName (Stream *)</code></li>
+</ul>
+
+<h4 id="contracts-2">Contracts</h4>
+
+<ul>
+<li>The starting state is <code>S_INIT</code> and is reserved and cannot be used in user-defined state configuration, other than to represent the starting state.</li>
+<li>States MAY be associated to entry actions which is the instantiation of a component (i.e. in<code>stateEntryComponents</code>)</li>
+<li>the <code>S_INIT</code> state MUST be associated ONLY with transitions featuring <code>EV_INIT</code> event (<strong>NOT implemented??</strong>).</li>
+</ul>
+
+<p><strong>NOTE OF CAUTION</strong> :: an state machine configured with an event guard such that the init event fails will remain in the initial state : the init event will not be repeated, hence the state machine will never transition.</p>
+
+<h4 id="description-2">Description</h4>
+
+<p>The states that the state machines can navigate to are necessarily the keys of the <code>stateEntryComponents</code> parameters. To each such state/key, a component is associated. That component will be initialized upon entering the state, and stopped upon exiting that state.</p>
+
+<p>It should be noted that depending on the configuration of the state machine, in particular in line with the <code>re_entry</code> configuration parameter, the component may or may not be re-initialized in the special case of a state machine exiting one state and re-entering the same state.</p>
+
+<p>The returned component is taking the same <code>sources</code> and <code>settings</code> parameters than the state machine component, hence is injected the same dependencies than the state machine component.</p>
+
+<p>Its <code>sinks</code> output is merged with the state machine component output and should then logically be passed downstream to the sinks interpreter.</p>
+
+<p><strong>NOTE</strong>: to prevent unwanted modification of the internal state machine model, the <code>model</code> parameter passed to all configured state machines&rsquo; functions is a clone of the internal model. This might have some effect on performance, we might consider relaxing this constraint in future versions if need be.</p>
+
+<p><strong>NOTE</strong>: <em>NOT IMPLEMENTED</em> :
+The state machine keeps a journal of the modification of its model (history of update operations together with the transitions taken) for debugging purposes or else.</p>
+
+<h3 id="state-machine-settings">State machine settings</h3>
+
+<h4 id="types-3">Types</h4>
+
+<pre><code> FSM_Settings :: Record {
+     initial_model :: FSM_Model
+     init_event_data :: EventData
+     sinkNames :: [SinkName] | []
+     debug: Boolean | Null
+   }
+</code></pre>
+
+<h4 id="description-3">Description</h4>
+
+<ul>
+<li><code>initial_model</code> : initial value of the state machine model</li>
+<li><code>init_event_data</code> : data to be included in the initial event upon initialization of the state machine</li>
+<li><code>sinkNames</code> : names of the sink which will be output by the state machine. This is parameter is of paramount importance, as no sinks which are not included here will be output and processed by the state machine.</li>
+<li><code>debug</code> : if set to <code>true</code>, automatically adds logging and tracing aspects to all functions used in the state machine configuration. This includes, event factory, event streams, actions, actions guards, event guards, and state entry components.</li>
+</ul>
+
+<p><strong>NOTE</strong> : the debug is best used with functions which have meaningful names (i.e. avoid anonymous functions). This gives for more readable logs.</p>
+
+<h1 id="roadmap">Roadmap</h1>
+
+<ul>
+<li>the state machine keeps a journal of the modification of its model (history
+of update operations together with the transitions taken) for debugging
+purposes or else</li>
+<li>allow action request without waiting for response
+
+<ul>
+<li>this allows for example to implement <code>forkJoin</code> with FSM</li>
+<li>will also help implementing optimistic update (EHFSM will be great for that as we will still have to cope with the pessimistic case, so there will be error flows for any state, hence will be nice to group them hierarchically not to repeat transtiions)</li>
+</ul></li>
+<li>implement exit actions for cleanup purpose
+
+<ul>
+<li>will have to be specified in sync with the entry action (which probably creates the resource to clean up)</li>
+</ul></li>
+<li>specify event queuing, back pressure and interruption policies</li>
+<li>automatic events (i.e. immediate preemption or transient state)</li>
+<li>isolate out the output of the state machine (command passed through sinks)</li>
+
+<li><p>isolate out further the asynchronous actions to reuse a synchronous hierarchical state machine</p>
+
+<ul>
+<li>input -&gt; EHFSM -&gt; command request =&gt; command manager</li>
+<li>command manager orchestrates the command requests
+
+<ul>
+<li>drop command request if there is a command currently executing and not finished</li>
+<li>queue command request to be executed after current command is done executing</li>
+<li>abort current command execution and execute incoming command request</li>
+<li>abort current command execution if it takes too long to return a response</li>
+<li>this would require a controlling input (channel) linking the command manager to the EHFSM.
+
+<ul>
+<li>the EHFSM would hence have a BUSY state for all async. command which are pending execution</li>
+<li>the BUSY state would transition on controlling input received from command manager : BUSY, ABORT -&gt; return to state before BUSY, SUCCESS -&gt; transition to next state, ERROR -&gt; same thing</li>
+<li>queuing events would have to be done at EHFSM level, but that is tricky&hellip;
+
+<ul>
+<li>if event 1 succeed, the FSM changes state so the queued events would be interpreted in the new state context</li>
+<li>if event1 fails, the FSM might transition to an error state, so the queued events would be interpreted in the new error state context</li>
+<li>etc. so it is tricky - best is to drop the events, but not always possible?</li>
+<li>so keep the policy, but queue the events and execute them after the currently executed event is finished. It will be up to the machine designer to choose wisely his policies</li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul></li>
+
+<li><p>old policy thinking</p></li>
+
+<li><ul>
+<li>policies when a state machine is in between states (expecting action response)</li>
+</ul>
+
+<ul>
+<li>CANCEL AND FIRE : the action in course is cancelled and the event is processed</li>
+<li>DROP : the events are dropped and not processed, a warning is issued (default)</li>
+<li>QUEUE AND FIRE : events for that state are queued. If the transition is towards the same state, then events are dequeued and processed in order of arrival. If to another state, warning is issued and events are dropped</li>
+<li>QUEUE AND DROP : events for that state are queued. If the transition is towards the same state, then queued events who happened while the action was executed are dropped, the queued events who happened after action has ended (and hence state is re-entered) are processed in order of arrival. If transition is to another state, warning is issued and events are dropped</li>
+</ul></li>
+
+<li><p>policy should be specified at the transition level</p>
+
+<ul>
+<li>the event triggering the transition should define its queuing policy</li>
+</ul></li>
+</ul>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/efsm---example-application/">
+            <img class="icon-text" src="/img/prev.svg"/>EFSM combinator - sample application</a>
+        
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#extended-finite-state-machine-library">Extended finite state machine library</a>
+<ul>
+<li><a href="#reactive-programming-the-cyclejs-way">Reactive programming the <code>cyclejs</code> way</a></li>
+<li><a href="#apis">APIs</a>
+<ul>
+<li><a href="#makefsm-events-transitions-entrycomponents-fsmsettings-component"><code>makeFsm :: Events -&gt; Transitions -&gt; EntryComponents -&gt; FsmSettings -&gt; Component</code></a></li>
+<li><a href="#events">Events</a>
+<ul>
+<li><a href="#types">Types</a></li>
+<li><a href="#contracts">Contracts</a></li>
+<li><a href="#description">Description</a></li>
+</ul></li>
+<li><a href="#transitions">Transitions</a>
+<ul>
+<li><a href="#types-1">Types</a></li>
+<li><a href="#contracts-1">Contracts</a></li>
+<li><a href="#description-1">Description</a></li>
+</ul></li>
+<li><a href="#states">States</a>
+<ul>
+<li><a href="#types-2">Types</a></li>
+<li><a href="#contracts-2">Contracts</a></li>
+<li><a href="#description-2">Description</a></li>
+</ul></li>
+<li><a href="#state-machine-settings">State machine settings</a>
+<ul>
+<li><a href="#types-3">Types</a></li>
+<li><a href="#description-3">Description</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li><a href="#roadmap">Roadmap</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>GUI testing - Technuflexions</title>
+
+		<meta name="description" content="Defining the problem To generate a set of test cases, test designers attempt to cover all the functionality of the system and fully exercise the GUI itself. The difficulty in accomplishing this task is three-fold:
+ to deal with domain size and with sequences. In addition, the tester faces more difficulty when they have to do regression testing. in addition to testing behaviour, the tester must also test for visual appearance  Size of the domain and sequences Unlike a CLI (command line interface) system, a GUI has many operations that need to be tested.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+	<header><hgroup id="brand">
+	<h1>GUI testing</h1>
+	<h5>
+		<time datetime="2017-11-02 00:00:00 &#43;0000 UTC">Nov 02, 2017</time>
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			
+			<a href="/tags/testing">testing</a>
+			5 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+	
+
+<h1 id="defining-the-problem">Defining the problem</h1>
+
+<p>To generate a set of test cases, test designers attempt to cover all the functionality of
+the system and fully exercise the GUI itself. The difficulty in accomplishing this task is
+three-fold:</p>
+
+<ul>
+<li>to deal with domain size and with sequences.</li>
+<li>In addition, the tester faces more difficulty when they have to do regression testing.</li>
+<li>in addition to testing behaviour, the tester must also test for visual appearance</li>
+</ul>
+
+<h2 id="size-of-the-domain-and-sequences">Size of the domain and sequences</h2>
+
+<p>Unlike a CLI (command line interface) system, a GUI has many operations that need to be tested. A relatively small program such as Microsoft WordPad has 325 possible GUI operations<sup class="footnote-ref" id="fnref:1"><a rel="footnote" href="#fn:1">1</a></sup> In a large program, the number of operations can easily be an order of magnitude larger.</p>
+
+<p>The second problem is the sequencing problem. Some functionality of the system may only be accomplished with a sequence of GUI events. For example, to open a file a user may have to first click on the <code>File</code> menu, then select the <code>Open</code> operation, use a dialog box to specify the file name, and focus the application on the newly opened window. Increasing the number of possible operations increases the sequencing problem exponentially. This can become a serious issue when the tester is creating test cases manually.</p>
+
+<h2 id="regression-testing">Regression testing</h2>
+
+<p>Regression testing becomes a problem with GUIs as well. A GUI may change significantly, even though the underlying application does not. A test designed to follow a certain path through the GUI may then fail since a button, menu item, or dialog may have changed location or appearance.</p>
+
+<p>This is a very serious problem as a GUI is often built iteratively, and as such changes with a much higher frequency that the core application, laeding to constantly having to revisit existing tests.</p>
+
+<h2 id="behavior-vs-appearance">Behavior vs. appearance</h2>
+
+<p>GUI specifications fall in several categories :</p>
+
+<ul>
+<li>behaviour
+
+<ul>
+<li>navigation</li>
+<li>actions and their visual trigger (button, form etc.)</li>
+<li>visual feedback to user actions (error messages, etc.)</li>
+</ul></li>
+<li>look
+
+<ul>
+<li>style, layout, alignment, content, colour, size, scrollbar, readability, etc.</li>
+</ul></li>
+</ul>
+
+<p>Problems related to testing the behavioural part of the GUI have been described in the previous sections (domain size and sequences). The specific challenges linked to visual testing are :</p>
+
+<ul>
+<li>regression testing, as described previously. Any changes, even small, in the visual appearance can lead to the invalidation of many tests down the road</li>
+<li>visual appearance itself may respond to a complex logic (responsive design, media-query, etc.) which have to be simulated, extending by then considerably the test domain</li>
+</ul>
+
+<h1 id="test-methods">Test methods</h1>
+
+<p>The key methods used for GUI testing are :</p>
+
+<ul>
+<li><strong>Manual testing</strong>. Under this approach, graphical screens are checked manually by testers in conformance with the requirements stated in the business requirements document.</li>
+<li><strong>Automated record and replay</strong>. Mainly done by automation tools. This is done in two parts. During <code>Record</code>, test steps are captured by the automation tool. During <code>playback</code>, the recorded test steps are executed on the application under test.</li>
+<li><strong>Automated inputs</strong>. Similar to the previous testing method, this method allows to simulate programmatically user inputs, and observe the output of the application under test.</li>
+<li><strong>Model-based testing</strong>.
+Under this method, the expected behaviour of the GUI is predicted by a formal model incorporating a representation of GUI inputs and state. The actual GUI behaviour is checked to be consistent with
+the expected behaviour.</li>
+<li><strong>Visual testing</strong> (a.k.a. visual checking or visual regression testing). The term Visual Testing (VT) is used to refer to that part of GUI testing concerned with testing the visual properties of GUI elements and Visual Defect (VD) is the term that will be used to refer for those defects reported by this type of testing<sup class="footnote-ref" id="fnref:2"><a rel="footnote" href="#fn:2">2</a></sup>.</li>
+</ul>
+
+<h2 id="model-based-testing">Model-based testing</h2>
+
+<p>Model-based testing allows to :</p>
+
+<ul>
+<li>use algorithms to figure out all of the usage paths for an application to pare down the number to get a maximum in coverage and a minimum of tests, and &hellip;</li>
+<li>automate generation of such test cases</li>
+</ul>
+
+<p>The cost associated to this approach is linked precisely to the construction of the behaviour model. Such endeavour requires complete documentation for applications (and updating and fully maintaining that documentation throughout the entire development process).</p>
+
+<p>A common approach is to modelize GUI behaviour via extended finite state machines. The use of state machines for specifying user interfaces has been explored as early as mid-1980s in <sup class="footnote-ref" id="fnref:3"><a rel="footnote" href="#fn:3">3</a></sup>. At that time, however, state machines were applied to textual user interfaces, which are much simpler to model and analyze (for example, they do not involve callbacks). With the advent of flexible, dynamically  modifiable GUI systems research in the human-computer interface (HCI) area  has focused primarily on dynamic aspects of GUI-based systems, where state  machines appear to be less useful. However, in the domain of static GUI with a low number of states, EFSMs are quite appropriate and yield high-level and accurate models of user expectations of the system<sup class="footnote-ref" id="fnref:4"><a rel="footnote" href="#fn:4">4</a></sup>.</p>
+
+<h1 id="references">References</h1>
+<div class="footnotes">
+
+<hr />
+
+<ol>
+<li id="fn:1">Wikipedia, <a href="https://en.wikipedia.org/wiki/Graphical_user_interface_testing">https://en.wikipedia.org/wiki/Graphical_user_interface_testing</a>
+ <a class="footnote-return" href="#fnref:1"><sup>[return]</sup></a></li>
+<li id="fn:2">Ayman Issa, Jonathan Sillito, Vahid Garousi. Visual Testing of Graphical User Interfaces: an Exploratory Study Towards Systematic Definitions and Approaches. WSE &lsquo;12 Proceedings of the 2012 IEEE 14th International Symposium on Web Systems Evolution (WSE). Pages 11-15. <a href="http://people.ucalgary.ca/~sillito/work/wse2012.pdf">http://people.ucalgary.ca/~sillito/work/wse2012.pdf</a>
+ <a class="footnote-return" href="#fnref:2"><sup>[return]</sup></a></li>
+<li id="fn:3">A.I. Wasserman. Extending state transition diagrams for the specification of human-computer interaction. IEEE Transactions on Software Engineering,11(8):699–713, August 1985.
+ <a class="footnote-return" href="#fnref:3"><sup>[return]</sup></a></li>
+<li id="fn:4">Vivien Chinnapongse, Insup Lee, Oleg Sokolsky, Shaohui Wang, and Paul L. Jones, &ldquo;Model-Based Testing of GUI-Driven Applications&rdquo;, Lecture Notes in Computer Science: Software Technologies for Embedded and Ubiquitous Systems 5860, 203-214. November 2009. <a href="http://repository.upenn.edu/cis_papers/423/">http://repository.upenn.edu/cis_papers/423/</a>
+ <a class="footnote-return" href="#fnref:4"><sup>[return]</sup></a></li>
+</ol>
+</div>
+
+	<nav>
+	
+		<a class="prev-post" href="http://brucou.github.io/scratch/testing_strategies/">
+			<img class="icon-text" src="/img/prev.svg"/>Testing strategy</a>
+	
+	
+	</nav>
+</article>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+

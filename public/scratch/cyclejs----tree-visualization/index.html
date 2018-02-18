@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title> - Technuflections</title>
+
+		<meta name="description" content="Motivation bla bla about how important in a dataflow architecture to view the data flowing for finding, understanding and remediating errors.
+ all component combinators call m would be nice to have different visual description for combinators too  Algorithm  m(spec, settings, components) every settings will have a reserved _path, and _name property DOC : all private settings should start with _ _path should be the path in the component tree to a given component ?">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+	<header><hgroup id="brand">
+	<h1></h1>
+	<h5>
+		<time datetime="0001-01-01 00:00:00 &#43;0000 UTC">Jan 01, 0001</time>
+		1 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+	
+
+<h1 id="motivation">Motivation</h1>
+
+<p>bla bla about how important in a dataflow architecture to view the data flowing for finding,
+understanding and remediating errors.</p>
+
+<ul>
+<li>all component combinators call m</li>
+<li>would be nice to have different visual description for combinators too</li>
+</ul>
+
+<h1 id="algorithm">Algorithm</h1>
+
+<ul>
+<li>m(spec, settings, components)</li>
+<li>every settings will have a reserved _path, and _name property</li>
+<li>DOC : all private settings should start with _</li>
+<li>_path should be the path in the component tree to a given component</li>
+<li>?? PUT THE NAME IN THE SPECS?? probably but also, not instead
+
+<ul>
+<li>would be name of the combinator vs. name of the component</li>
+</ul></li>
+</ul>
+
+<pre><code class="language-javascript">App = m(spec, {_name:'App'}, [
+  m(spec, {_name: 'Level 1'}, [
+    m(spec, {_name: 'Level 1.1'}, [LeaveComponents])
+  ]),
+  m(spec, {_name: 'Level 2'}, [
+    m(spec, {_name: 'Level 2.1'}, [LeaveComponents])
+  ]),  
+])
+</code></pre>
+
+<p>should give :</p>
+
+<p>|&mdash;App&mdash;-|
+|          |&mdash;&ndash;App sinks&mdash;-</p>
+
+<h2 id="toc_2">|          |</h2>
+
+	<nav>
+	
+	
+		<a class="next-post" href="http://brucou.github.io/scratch/cyclejs---towards-model-based-testing/"><img class="icon-text" src="/img/next.svg"/>
+		</a>
+	
+	</nav>
+</article>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+

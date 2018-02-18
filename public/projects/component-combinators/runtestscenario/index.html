@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="generator" content="Hugo 0.31.1" />
+		<title>runTestScenario - Technuflections</title>
+
+		<meta name="description" content="Table of content  Context Dependencies API  Key types runTestScenario Mocking Source factories Contracts  Example  Basic example Using ad-hoc mocks and factories  Known limitations Installation  npm Direct download Bower jspm  Troubleshooting Breaking Changes Roadmap License Contributing  Context There exists a number of ways to test functions which take a stream and return a stream (referred to, in what follows, as stream combinator). Most streaming libraries have at least some basic APIs to that purpose.">
+
+
+		
+
+		<link  rel="stylesheet" href="https://fonts.googleapis.com/css?family=Fira+Mono|Lato|Raleway">
+
+
+		
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/ocean.min.css">
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/go.min.js"></script>
+		
+		
+
+		
+		<link rel="stylesheet" href="/css/normalize.css"/>
+		<link rel="stylesheet" href="/css/ui.css"/>
+		
+		<style>
+	a { color: ; }
+	blockquote {
+		border-left-color: ;
+		border-right-color: ; }
+	.bar a:hover {
+		color: ;
+		text-decoration: none; }
+	.sep {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		margin-left:0;
+		width: 24rem;
+		border-top: 2px solid ; }
+</style>
+
+	</head>
+
+<body>
+<header class="container">
+	<div class="u-header">
+		<nav class="bar">
+	<ul><li>
+			<a href="/">
+				<img class="icon-text" src="/img/prev.svg"/>
+			</a>
+		</li><li><a href="/">Home</a></li><li><a href="/posts/">Archives</a></li><li><a href="/tags/">Tags</a></li><li><a href="/categories/">Categories</a></li><li><a href="/projects/">Projects</a></li><li><a href="/about/">About</a></li></ul>
+</nav>
+
+	</div>
+</header>
+<main class="container">
+
+<article>
+    <header><hgroup id="brand">
+	<h1>runTestScenario</h1>
+	<h5> Last modified on
+		Jun 22, 2017
+		-
+			
+			<a href="/tags/functional%20programming">functional programming</a>
+			
+			<a href="/tags/reactive%20programming">reactive programming</a>
+			
+			<a href="/tags/user%20interface">user interface</a>
+			15 min read
+	</h5>
+	
+</hgroup>
+<hr class="sep" />
+</header>
+    <div class="post-content">
+        
+
+<h1 id="table-of-content">Table of content</h1>
+
+<ul>
+<li><a href="#context">Context</a></li>
+<li><a href="#dependencies">Dependencies</a></li>
+<li><a href="#api">API</a>
+
+<ul>
+<li><a href="#key-types">Key types</a></li>
+<li><a href="#runtestscenario-1">runTestScenario</a></li>
+<li><a href="#mocking">Mocking</a></li>
+<li><a href="#source-factories">Source factories</a></li>
+<li><a href="#contracts">Contracts</a></li>
+</ul></li>
+<li><a href="#example">Example</a>
+
+<ul>
+<li><a href="#basic-example">Basic example</a></li>
+<li><a href="#using-ad-hoc-mocks-and-factories">Using ad-hoc mocks and factories</a></li>
+</ul></li>
+<li><a href="#known-limitations">Known limitations</a></li>
+<li><a href="#installation">Installation</a>
+
+<ul>
+<li><a href="#npm">npm</a></li>
+<li><a href="#direct-download">Direct download</a></li>
+<li><a href="#bower">Bower</a></li>
+<li><a href="#jspm">jspm</a></li>
+</ul></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#breaking-changes">Breaking Changes</a></li>
+<li><a href="#roadmap">Roadmap</a></li>
+<li><a href="#license">License</a></li>
+<li><a href="#contributing">Contributing</a></li>
+</ul>
+
+<h1 id="context">Context</h1>
+
+<p>There exists a number of ways to test functions which take a stream and return a stream (referred to, in what follows, as stream combinator). Most streaming libraries have at least some basic APIs to that purpose.</p>
+
+<ul>
+<li><code>Rxjs</code> for example uses a test scheduler, and offers some specific constructs (<code>TestScheduler</code>, <code>startWithTiming</code>, <code>createHotObservable</code>, <code>Rx.ReactiveTest.onNext</code> etc.). <code>Most</code> has the <code>most-test</code> community library which can also help.</li>
+<li>In the worse case, if the streaming library offers subjects from the get-go, it is relatively easy to pass a sequence of inputs through that, run the stream combinator and gather back the output in sequence.</li>
+</ul>
+
+<p>Testing functions which take a collection of streams and return a collection of streams requires specific treatment in the case when order of inputs is total. That is the case when inputs are syntactically divided into a collection of source streams (<code>HashMap&lt;SourceName, Stream&lt;*&gt;&gt;</code>), but semantically are in fact equivalent to a single source stream (<code>Stream&lt;HashMap&lt;SourceName, *&gt;&gt;</code>), whose inputs carry both source type and message information. On the other hand, we assume here that ordering of outputs is only partial on the collection, and total on any given output stream.</p>
+
+<p>The total order on the input streams collection requires the testing facility to simulate the emission of inputs in the expected order. The partial order on the output streams collection allows the testing facility to only gather the outputs on a per-stream basis.</p>
+
+<p><code>runTestScenario</code> is such a testing facility which provides an interface for creating a collection of streams from an array of input values, executing a function on that collection and comparing the resulting collection of output streams vs. an expected array of output values.</p>
+
+<p>In what follows :</p>
+
+<ul>
+<li>by a collection of streams, we will refer to a hash object (i.e. standard javascript object), keyed by stream identifier, matched to the actual stream.</li>
+<li>the collection of streams, when envisioned as an input to the function under test, may also be called sources</li>
+<li>the collection of streams, when envisioned as an output to the function under test, may also be called sinks</li>
+<li>hence the function under test is a function which takes sources and computes sinks.</li>
+</ul>
+
+<h1 id="dependencies">Dependencies</h1>
+
+<ul>
+<li>functional toolkit : <code>ramda</code></li>
+<li>streaming library : <code>rxjs</code></li>
+</ul>
+
+<p>Customizing the testing library for a specific streaming is relatively simple as only the most basic functionalities of rxjs are used here. A <code>most</code> version already has already been published in the most community though no longer maintained by this author.</p>
+
+<h1 id="running-tests">Running tests</h1>
+
+<p><code>npm run build-node-test ; npm run test</code></p>
+
+<h1 id="api">API</h1>
+
+<h2 id="key-types">Key types</h2>
+
+<pre><code>/**
+ * @typedef {function(*):boolean} Predicate
+ * @typedef {Object} Input
+ * @typedef {Object} Output
+ * @typedef {{diagram: string, values: Object.&lt;string, Input&gt;}} Sequence
+ * @typedef {Object} ExpectedRecord
+ * @property {?function (output:Output):Output} transform
+ * @property {Array&lt;Output&gt;} outputs
+ * @property {?String} successMessage
+ * @property {!function (Array&lt;Output&gt;, Array&lt;Output&gt;), String} analyzeTestResults
+ * @typedef {!Object.&lt;string, ExpectedRecord&gt;} ExpectedTestResults
+ * @typedef {{diagram: string, values:*}} Input
+ * only one key,value pair though
+ * @typedef {Object.&lt;string, Input&gt;} SourceInput
+ * only one key,value pair though
+ * @typedef {Object} TestRunnerSettings
+ * @property {Number} tickDuration
+ * @property {Number} waitForFinishDelay
+ * @property {function(error:Exception):void} errorHandler
+ * @property {function(actual, expected):void} analyzeTestResults By contract, should throw if actual != expected
+ * @property {Object.&lt;String, function():Subject&gt;} sourceFactory hashmap associating a mocked source to a subject factory. The factory should create a subject through which test inputs are emitted
+ * @property {Object.&lt;String, function(mockedObj, sourceSpecs, stream):*&gt;} mocks The keys of `mocks` are the mocked object to build. Those mocked objects are passed as a source to the sources parameter of the tested component function (:: Sources -&gt; Sinks, where Sources :: Object.&lt;key, Source&gt;).
+ * Mocked source objects are build iteratively. As such, the function referred to here is a reducing function, which receives as first parameter the current value of the constructed mocked object, an additional parameter allowing for further parameterization, and the subject by which test inputs will flow for that (mock object, sourceSpecs) instance.
+ * Best is to review the tests to have a more precise understanding of the mechanism.
+ */
+
+</code></pre>
+
+<h3 id="runtestscenario"><code>runTestScenario</code></h3>
+
+<p>As extracted for current source code (as of <code>v0.1.0</code>),</p>
+
+<pre><code>/**
+ * Tests a function which takes a collection of streams and returns a collection of streams. In the current implementation, a collection of streams refers to a hash object (POJO or Plain Old Javascript Object).
+ * The function is run on some inputs, and its output is compared against the expected values defined in a test case object.
+ *
+ * ### Test execution
+ * Input values are emitted on their respective input streams according to an order defined by the array `inputs` (rows) and the marble diagrams (columns). That order is such that the first column is emitted first, and
+ * then subsequent columns in the marble diagrams are emitted next.
+ * The time interval between column emission is configurable (`tickDuration`).
+ * When there are no more input values to emit, a configurable amount of time must lapse for the test to conclude (`waitForFinishDelay`).
+ * Output values are optionally transformed, then hashed by output streams and gathered into an output object which is compared against expected values.
+ * If there is a discrepancy between actual and expected values, an exception is raised.
+ *
+ * The testing behaviour can be configured with the following settings :
+ * - tickDuration :
+ *   - the interval (ms) between the emission of a column of inputs and the next one
+ * - waitForFinishDelay :
+ *   - the time lapse (ms) after the last input is emitted, after which the test is terminated
+ * - errorHandler :
+ *   - in case an exception is raised, the corresponding error is passed through that error handler
+ * - mocks :
+ *   - only used if one of the input source key is of the form
+ *   x!y, where x is the source identifier, and y is called the source qualifier
+ *   - matches a source identifier to a factory function which produces a mocked object to be used in lieu of an input source
+ *   - for instance, `DOM!.button@click` as a key in the `inputs` parameter corresponds to a `DOM` entry in the `mocks` object passed in settings
+ *   - the mock function takes three parameters :
+ *     - mockedObj :
+ *       - current constructed value of the mock object (object is iteratively constructed)
+ *     - sourceSpecs :
+ *       - correspond to the `y` in `x!y`
+ *     - stream :
+ *       - subject passed to transmit input values for the corresponding mocked object
+ * - sourceFactory :
+ *   - entries whose keys are of the form `x!y` where `x` is the identifier for the corresponding source stream, and `y` is the qualifier for that same source. That key is matched to a function which takes no parameter and returns a stream to be used to emit input values (hence MUST be a subject).
+ *
+ * @param {Array&lt;SourceInput&gt;} inputs
+ * Inputs are passed in the form of an array
+ * - Each element of the array is a POJO which exactly ONE key which is the identifier for the tested function's corresponding input stream
+ *   - Input values for a given input streams are passed using the marble diagram syntax
+ * @param {ExpectedTestResults} expected Object whose key corresponds to an output stream identifier, matched to an object containing the data relevant to the test case :
+ *   - outputs : array of expected values emitted by the output stream
+ *   - successMessage : description of the test being performed
+ *   - analyzeTestResults : function which receives the actual, expected, and test messages information. It MUST raise an exception if the test fails. Typically this function fulfills the same function as the usual `assert.equal(actual, expected, message)`. That function is optional. It also has lower precedence over the function with the same name passed in settings, if any.
+ *   - transform : function which transforms the actual outputs from a stream.
+ *   That transform function can be used to remove fields, which are irrelevant or non-reproducible (for instance timestamps), before comparison.
+ *
+ *   ALL output streams returned by the tested function must have defined expected results, otherwise an exception will be thrown.
+ * @param {function(Sources):Sinks} testFn Function to test
+ * @param {TestRunnerSettings} _settings
+ * @throws when a predefined contract is broken, or when the tested function throws
+ */
+</code></pre>
+
+<h2 id="marble-syntax">Marble syntax</h2>
+
+<p>The marble syntax used for representing input sequences is inspired from
+<code>rxjs5</code>&rsquo;s <a href="https://github.com/ReactiveX/rxjs/blob/master/doc/writing-marble-tests.md">writing marble tests</a>.</p>
+
+<p>In the present context, the syntax is used to denote four meanings :</p>
+
+<ul>
+<li><code>-</code> : empty data slot - no data is emitted by the producer</li>
+<li><code>|</code> : completion of the sequence - this is the observable producer signaling <code>complete()</code></li>
+<li><code>#</code> : error - An error terminating the sequence. This is the observable producer signaling <code>error()</code></li>
+<li><code>a</code> (any ONE character) : input value - All other characters than the three
+previously shown represent a value being emitted by the producer signaling <code>next()</code></li>
+</ul>
+
+<h3 id="examples">Examples</h3>
+
+<ul>
+<li><code>a--#</code> : represents a producer which emits a value on the first time slot,
+then emits nothing the next two time slots, and then on the 4th time slots
+emits an error.</li>
+<li><code>-b|</code> : represents a producer which emits nothing on the first time slot,
+then emits a value on the next time slot, then completes on the third
+time slot..</li>
+</ul>
+
+<h3 id="total-ordering">Total ordering</h3>
+
+<p>The following inputs :</p>
+
+<pre><code>[
+  { x$: {diagram: `a-c`} }, // row 1
+  { y$: {diagram: `bde`} }  // row 2
+]
+</code></pre>
+
+<p>will result in the following data emission and sequence of actions:
+- lapse of <code>tickDuration</code> ms
+- emission of <code>&quot;a&quot;</code> by <code>x$</code> THEN emission of <code>&quot;b&quot;</code> by <code>y$</code>
+- lapse of <code>tickDuration</code> ms
+- emission of <code>&quot;d&quot;</code> by <code>y$</code>
+- lapse of <code>tickDuration</code> ms
+- emission of <code>&quot;c&quot;</code> by <code>x$</code> THEN emission of <code>&quot;e&quot;</code> by <code>y$</code>
+- lapse of <code>waitForFinishDelay</code> ms
+- completion of the test producer and processing of outputs</p>
+
+<p>Hence data emission is such that, if <code>(i,j)</code>represents the input value at row <code>i</code> and column <code>j</code>, then <code>(i,j)</code> is ALWAYS emitted before <code>(k,l)</code> if <code>j &lt; l</code> or <code>j==l &amp;&amp; i &lt; k</code>.</p>
+
+<h3 id="input-values">Input values</h3>
+
+<p>Input values can be associated to the letter/character in the diagram through
+ the <code>values</code> property. When no matching entry can be found in <code>values</code>, the
+ input stream emits the character itself. For  instance :</p>
+
+<pre><code> [
+   { x$: {diagram: `a-c`, values: {c: `dummy`}} }, // row 1
+   { y$: {diagram: `bde`} }  // row 2
+ ]
+</code></pre>
+
+<p>will result in the input stream <code>x$</code> emitting <code>a</code> on the first time slot
+and dummy` on the third time slot.</p>
+
+<h2 id="mocking">Mocking</h2>
+
+<p>In order to cover <code>cycle.js</code> applications&rsquo; use cases, where functions (called
+components or component functions) take as input a collection of streams OR
+regular  objects from which streams are derived, a mocking functionality has been added, extending the syntax. For example :</p>
+
+<pre><code>[
+   { x$: {diagram: `a-c`, values: {c: `dummy`}} }, // row 1
+   { `y!z`: {diagram: `bde`} }  // row 2
+ ]
+</code></pre>
+
+<p>will construct a mock object <code>y</code> and an input stream (identified by <code>z</code>) which
+will emit values corresponding to the marble diagram specification. <code>y</code> is
+referred to as the mock identifier and can be any string (not including the <code>!</code> character). <code>z</code> is referred to as the stream qualifier and can be any string (not including the <code>!</code> character).</p>
+
+<p>For instance, in the included example, a <code>DOM!input@click</code> input entails the creation of a <code>DOM</code> mock object which will reference through an API of its choice an input stream corresponding to <code>input@click</code>.</p>
+
+<p>The DOM mock factory function, passed through the <code>settings</code> parameter
+ (<code>makeMockDOMSource</code>), builds the mock object iteratively and constructs the derived input streams using the relevant source factory (defined in
+ <code>settings.sourceFactory</code>).</p>
+
+<p>Cf. the documentation in the code source and the example above for more
+  details.</p>
+
+<h2 id="source-factories">Source factories</h2>
+
+<p>A source factory is a function which MUST return a subject (cf. contracts).
+The functionality is added to support the object mocking ability.</p>
+
+<h2 id="contracts">Contracts</h2>
+
+<ul>
+<li>key type contracts
+
+<ul>
+<li>tested function MUST have the expected signature</li>
+<li>must take a collection of streams OR objects&hellip;</li>
+<li>&hellip;and return a collection of streams</li>
+<li><code>analyzeTestResults</code> is mandatory and must throw to signal test failure
+
+<ul>
+<li>it however can be defined globally in settings, or locally for each output stream</li>
+</ul></li>
+<li>source factory functions must return a subject</li>
+</ul></li>
+<li>other rules
+
+<ul>
+<li>source identifier MUST be non-empty strings</li>
+<li>source identifier MUST follow either <code>x</code> or <code>x!y</code> syntax, where <code>x</code> and
+<code>y</code> are any non empty strings, i.e. <code>!sth</code> is not a permitted syntax</li>
+<li>if the syntax <code>x!y</code> is used for a source identifier, there MUST be a
+corresponding key <code>x</code> in the <code>mocks</code> object</li>
+</ul></li>
+</ul>
+
+<h1 id="examples-1">Examples</h1>
+
+<h2 id="basic-example">Basic example</h2>
+
+<p>The example thereafter illustrates the following optional features:</p>
+
+<ul>
+<li>settings
+
+<ul>
+<li><code>tickDuration</code></li>
+<li><code>waitForFinishDelay</code></li>
+</ul></li>
+<li>inputs
+
+<ul>
+<li>values matching marble diagram letters</li>
+</ul></li>
+<li>outputs
+
+<ul>
+<li>transform function</li>
+</ul></li>
+</ul>
+
+<pre><code>describe(&quot;When inputs are simulating regular stream behaviour&quot;, () =&gt; {
+  it(`emits the inputs in increasing order of (i,j), where : 
+   - i is the (row) index of the source in the input array
+   - j is the (column) index of the emitted input value in the source diagram
+   - (2,1) &lt; (1,2)`, (done) =&gt; {
+    const assertAsync = plan(3)
+
+    function analyzeTestResults(actual, expected, message) {
+      assert.deepEqual(actual, expected, message)
+      assertAsync(done)
+    }
+
+    const inputs = [
+      {a: {diagram: 'xy|', values: {x: 'a-0', y: 'a-1'}}},
+      {b: {diagram: 'xyz|', values: {x: 'b-0', y: 'b-1', z: 'b-2'}}},
+    ]
+
+    /** @type ExpectedTestResults */
+    const expected = {
+      m: {
+        outputs: ['m-a-0', 'm-b-0', 'm-a-1', 'm-b-1', 'm-b-2'],
+        successMessage: 'sink m produces the expected values',
+        analyzeTestResults: analyzeTestResults,
+        transform: undefined,
+      },
+      n: {
+        outputs: ['t-n-a-0', 't-n-a-1'],
+        successMessage: 'sink n produces the expected values',
+        analyzeTestResults: analyzeTestResults,
+        transform: x =&gt; 't-' + x,
+      },
+      o: {
+        outputs: ['o-b-0', 'o-b-1', 'o-b-2'],
+        successMessage: 'sink o produces the expected values',
+        analyzeTestResults: analyzeTestResults,
+        transform: undefined,
+      }
+    }
+
+    const testFn = sources =&gt; ({
+      m: $.merge(sources.a, sources.b).map((x =&gt; 'm-' + x)),
+      n: sources.a.map(x =&gt; 'n-' + x),
+      o: sources.b.delay(3).map(x =&gt; 'o-' + x)
+    })
+
+    runTestScenario(inputs, expected, testFn, {
+      tickDuration: 10,
+      waitForFinishDelay: 30
+    })
+  })
+})
+
+</code></pre>
+
+<h2 id="using-ad-hoc-mocks-and-factories">Using ad-hoc mocks and factories</h2>
+
+<p>The example thereafter illustrates the following features:
+ - mock
+   - <code>makeDOMSource</code> mock
+ - stream (subject) factory
+ - error handler</p>
+
+<p>Note that :
+- the error handler is used here to pass on the error to the testing
+library (here <code>mocha</code>).</p>
+
+<pre><code>describe(&quot;When inputs are simulating an object, AND there is a mock&quot; +
+  &quot; associated to that object&quot;, () =&gt; {
+  it('constructs the object according to the mock handler, constructs the' +
+    ' sources with the source factory and emits the input values through that',
+    (done) =&gt; {
+      const assertAsync = plan(3)
+
+      function analyzeTestResults(actual, expected, message) {
+        assert.deepEqual(actual, expected, message)
+        assertAsync(done)
+      }
+
+      function noop() {
+      }
+
+      function makeDummyClickEvent(value) {
+        return {
+          preventDefault: noop,
+          tap: x =&gt; console.log(x),
+          target: {
+            value: value
+          }
+        }
+      }
+
+      function makeDummyHoverEvent(value) {
+        return {
+          value: value
+        }
+      }
+
+      const inputs = [
+        {
+          'DOM!input@click': {
+            diagram: 'xy|', values: {
+              x: makeDummyClickEvent('a-0'), y: makeDummyClickEvent('a-1')
+            }
+          }
+        },
+        {
+          'DOM!a@hover': {
+            diagram: '-xyz|', values: {
+              x: makeDummyHoverEvent('a-0'),
+              y: makeDummyHoverEvent('a-1'),
+              z: makeDummyHoverEvent('a-2'),
+            }
+          }
+        },
+        {b: {diagram: 'xyz|', values: {x: 'b-0', y: 'b-1', z: 'b-2'}}},
+      ]
+
+      const testFn = function testFn(sources) {
+        const DOMclick = sources.DOM.select('input').events('click');
+        const DOMhover = sources.DOM.select('a').events('hover');
+        return {
+          m: DOMclick
+            .tap(ev =&gt; ev.preventDefault())
+            .map(x =&gt; 'm-' + x.target.value),
+          n: DOMhover.map(x =&gt; 'n-' + x.value),
+          o: DOMhover.combine((a,b)=&gt; ({x: a.value,y:b.target.value}), DOMclick)
+        }
+      }
+
+      /** @type ExpectedTestResults */
+      const expected = {
+        m: {
+          outputs: ['m-a-0', 'm-a-1'],
+          successMessage: 'sink m produces the expected values',
+          analyzeTestResults: analyzeTestResults,
+          transform: undefined,
+        },
+        n: {
+          outputs: ['t-n-a-0', 't-n-a-1', 't-n-a-2'],
+          successMessage: 'sink n produces the expected values',
+          analyzeTestResults: analyzeTestResults,
+          transform: x =&gt; 't-' + x,
+        },
+        o: {
+          outputs: [{&quot;x&quot;:&quot;a-0&quot;,&quot;y&quot;:&quot;a-1&quot;},{&quot;x&quot;:&quot;a-1&quot;,&quot;y&quot;:&quot;a-1&quot;},{&quot;x&quot;:&quot;a-2&quot;,&quot;y&quot;:&quot;a-1&quot;}],
+          successMessage: 'sink o produces the expected values',
+          analyzeTestResults: analyzeTestResults,
+          transform: undefined,
+        }
+      }
+
+      runTestScenario(inputs, expected, testFn, {
+        tickDuration: 10,
+        waitForFinishDelay: 30,
+        mocks: {
+          DOM: makeMockDOMSource
+        },
+        sourceFactory: {
+          'DOM!input@click': () =&gt; sync(),
+          'DOM!a@hover' : () =&gt; sync(),
+        },
+        errorHandler: function (err) {
+          done(err)
+        }
+      })
+    })
+})
+
+// DOM Mocking
+ function isValidDOMSourceInput(select, event) {
+   // Keep it simple for now
+   return !!select &amp;&amp; !!event
+ }
+ 
+ function makeDOMMock(hashTable) {
+   return function mockCycleDOMSelect(selector) {
+     return {
+       events: function mockCycleDOMEvent(event) {
+         return hashTable[selector][event]
+       }
+     }
+   }
+ }
+ 
+ function makeMockDOMSource(_mockedObj, sourceSpecs, stream) {
+   const [select, event] = sourceSpecs.split('@');
+ 
+   if (!isValidDOMSourceInput(select, event)) {
+     throw `Invalid spec for DOM source : ${sourceSpecs}`
+   }
+ 
+   // Initialize object hash table if not done already
+   let mockedObj = _mockedObj || {};
+   mockedObj.hashTable = mockedObj.hashTable || {};
+   mockedObj.hashTable[select] = mockedObj.hashTable[select] || {};
+   mockedObj.hashTable[select][event] = mockedObj.hashTable[select][event] || {};
+   // register the stream in the hash table
+   mockedObj.hashTable[select][event] = stream;
+   // build the mock anew to incorporate the new stream
+   mockedObj.select = makeDOMMock(mockedObj.hashTable)
+   return mockedObj
+ }
+
+</code></pre>
+
+<h1 id="known-limitations">Known limitations</h1>
+
+<ul>
+<li>The edge case of a tested function which takes streams and returns nothing is
+not handled.</li>
+<li><code>rxjs</code> grammar is not enforced for the marble diagrams, i.e. behaviour of a
+sequence such as <code>a-|b#-c|</code> is unspecified and untested.</li>
+<li>Due to the imprecision of <code>setTimeOut</code> and the like, it is impossible to enforce an absolute timing for input emission. This means that it is not possible to send input <code>x</code> after EXACTLY <code>t</code> ms.</li>
+<li>It is not possible in the current version of the API to check against total order of outputs, only against the relative order of output values for a given sink. This means it is not possible to discriminate whether the <code>i</code>-th output value of sink <code>S</code> was emitted before or after the <code>j</code>-th output of sink <code>T</code>. It is only guaranteed that the <code>i</code>-th output value of sink <code>S</code> was emitted before the <code>j</code>-th output of sink <code>S</code>, iff <code>i &lt; j</code>. For the vast majority of applications though, such a degree of precision is hopefully not necessary.</li>
+<li>Subjects are used to simulate input streams. Small semantic differences
+between the two around edge cases, depending on the streaming library in use, may lead to false negatives.</li>
+</ul>
+
+<h1 id="troubleshooting">Troubleshooting</h1>
+
+<p>No shooting, no trouble.</p>
+
+<h1 id="breaking-changes">Breaking Changes</h1>
+
+<p>Maybe one day. Cf. roadmap</p>
+
+<h1 id="roadmap">Roadmap</h1>
+
+<ul>
+<li>clean code</li>
+<li>review API against open/closed principle</li>
+<li>combine mocks and source factory in one indexed by the mock
+i.e. DOM : {y_n: factory(), constructor: makeDOMsource}</li>
+<li>have documentation reviewed by external actor</li>
+</ul>
+
+<h1 id="license">License</h1>
+
+<p>MIT</p>
+
+<h1 id="contributing">Contributing</h1>
+
+<p>Shoot but aim high. Open a pull request!</p>
+
+<p>Suggestions, if you are bored on a sunday :
+- typescript type file
+    - most of the type information is there</p>
+
+    </div>
+    <nav>
+        
+        <a class="prev-post" href="http://brucou.github.io/projects/component-combinators/mm/">
+            <img class="icon-text" src="/img/prev.svg"/>m - the generic component combinator</a>
+        
+        
+        <a class="next-post" href="http://brucou.github.io/projects/component-combinators/efsm---the-case-for-ui-programming/">The case for state machines in UI programming<img class="icon-text" src="/img/next.svg"/>
+        </a>
+        
+    </nav>
+</article>
+
+<div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">Contents</h2>
+    <div class="post-toc-content">
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#table-of-content">Table of content</a></li>
+<li><a href="#context">Context</a></li>
+<li><a href="#dependencies">Dependencies</a></li>
+<li><a href="#running-tests">Running tests</a></li>
+<li><a href="#api">API</a>
+<ul>
+<li><a href="#key-types">Key types</a>
+<ul>
+<li><a href="#runtestscenario"><code>runTestScenario</code></a></li>
+</ul></li>
+<li><a href="#marble-syntax">Marble syntax</a>
+<ul>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#total-ordering">Total ordering</a></li>
+<li><a href="#input-values">Input values</a></li>
+</ul></li>
+<li><a href="#mocking">Mocking</a></li>
+<li><a href="#source-factories">Source factories</a></li>
+<li><a href="#contracts">Contracts</a></li>
+</ul></li>
+<li><a href="#examples-1">Examples</a>
+<ul>
+<li><a href="#basic-example">Basic example</a></li>
+<li><a href="#using-ad-hoc-mocks-and-factories">Using ad-hoc mocks and factories</a></li>
+</ul></li>
+<li><a href="#known-limitations">Known limitations</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#breaking-changes">Breaking Changes</a></li>
+<li><a href="#roadmap">Roadmap</a></li>
+<li><a href="#license">License</a></li>
+<li><a href="#contributing">Contributing</a></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+
+			<hr class="sep" />
+		</main>
+		<footer class="container">
+			<div class="u-footer">
+				
+<a href="mailto:mailto:brucou@github.com"><img class="icon-social" src="/img/email.svg" alt="Email Me!"/></a>
+
+
+<a href="https://github.com/brucou"><img class="icon-social" src="/img/github.svg" alt="Github"/></a>
+
+
+<a href="https://stackoverflow.com/users/3743222/user3743222"><img class="icon-social" src="/img/stackoverflow.svg" alt="Stackoverflow"/></a>
+
+<a href="http://brucou.github.io/index.xml" target="_blank"><img class="icon-social" src="/img/feed.svg" alt="Feed"></a>
+
+                <p>
+					
+					
+					&copy; 2017 brucou
+					
+					
+				</p>
+				
+				<a href="#">
+					<img class="icon-text" src="/img/toup.svg" alt="To Up"/>
+					<span>Back to Up</span>
+				</a>
+				
+			</div>
+		</footer>
+		
+		<script>hljs.initHighlightingOnLoad();</script>
+		
+			<script type="text/javascript">
+              window.MathJax = {
+                showProcessingMessages: false,
+                messageStyle: 'none',
+                tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+              };
+			</script>
+			<script async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML'></script>
+			<script src="/lib/highlight/highlight.pack.js?v=20171001"></script>
+            <script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+            <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+			<script type="text/javascript" src="/lib/fancybox/jquery.fancybox-3.1.20.min.js"></script>
+            <script type="text/javascript" src="/dist/even.js?v=2.6.6"></script>
+	</body>
+</html>
+
+

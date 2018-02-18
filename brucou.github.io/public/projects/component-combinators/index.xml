@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Component combinators on Technuflexions</title>
+    <link>http://brucou.github.io/projects/component-combinators/</link>
+    <description>Recent content in Component combinators on Technuflexions</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2017 brucou</copyright>
+    <lastBuildDate>Tue, 02 Jan 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="http://brucou.github.io/projects/component-combinators/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>InSlot</title>
+      <link>http://brucou.github.io/projects/component-combinators/inslot/</link>
+      <pubDate>Tue, 02 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/inslot/</guid>
+      <description>Motivation The InSlot combinator allows to assign a named slot to DOM content. This is to be used in conjunction with container components, which marks the position of those slots within the DOM content of the container component.
+In simple cases with only DOM content, slots can be directly set with the slot module (div({slot : &#39;xxx&#39;}, [dom content])). In the case of components which can return any number of sinks, assigning a slot to their DOM content can only be done with the InSlot combinator.</description>
+    </item>
+    
+    <item>
+      <title>Pipe</title>
+      <link>http://brucou.github.io/projects/component-combinators/pipe/</link>
+      <pubDate>Sat, 16 Dec 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/pipe/</guid>
+      <description>Motivation The Pipe component allows to execute a number of components sequentially, with the ouptuts (sinks) of each connected to the inputs of the next.
+This covers the case of components which do not output action sinks but intermediary sinks, destined to serve as inputs for components finalizing the sinks computation.
+ It allows to use the event-intent-action pattern, by isolating each concern in a single component, and sequentially composing them: ComposedComponent = Pipe(Event, Intent, Action), where Event acts as event factory, returns sinks which are events, Intent aggregates events into intent sinks, Action computes the actions sinks from the intents.</description>
+    </item>
+    
+    <item>
+      <title>Default merge functions and slotted content</title>
+      <link>http://brucou.github.io/projects/component-combinators/m-component---merge-default-functions/</link>
+      <pubDate>Wed, 20 Sep 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/m-component---merge-default-functions/</guid>
+      <description>Motivation We want in this section to describe the default merge functions used by the m component factory, when no such merge function is supplied by the user.
+DOM merge The DOM merge function relating to m :: ComponentDef -&amp;gt; Settings -&amp;gt; [ParentComponent, Array&amp;lt;ChildComponent&amp;gt;]) has the following signature : DOMDefaultMerge :: Nullable&amp;lt;ParentDOMSink&amp;gt;, Array&amp;lt;DOMSink&amp;gt;, Settings, where :
+ ParentDOMSink encapsulates the DOM produced by ParentComponent Array&amp;lt;DOMSink&amp;gt; encapsulates the DOM produced by the childrenArray&amp;lt;ChildComponent&amp;gt; Settings follows the usual inheritance rules of settings through the component tree  If the user does not supply a merge function through the ComponentDef parameter, the default one is used.</description>
+    </item>
+    
+    <item>
+      <title>ActionDriver</title>
+      <link>http://brucou.github.io/projects/component-combinators/actiondriver/</link>
+      <pubDate>Sun, 03 Sep 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/actiondriver/</guid>
+      <description>Motivation The action driver allows to execute a command on a resource and retrieve the response. The command is parameterized by the repository holding the resource, the resource in question, and additional parameters which specify further the command to be executed.
+A typical application is to execute a domain object&amp;rsquo;s method or a domain service in a given bounded context. More generally, the action driver can be used to execute any command pre-defined for a given context with a set of parameters.</description>
+    </item>
+    
+    <item>
+      <title>Query driver</title>
+      <link>http://brucou.github.io/projects/component-combinators/querydriver/</link>
+      <pubDate>Sun, 03 Sep 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/querydriver/</guid>
+      <description>Motivation The query driver allows to query a resource for a subset of the values that it references. The query is parameterized by the repository holding the resource, the resource in question, and additional parameters which specify the subset of values from that resource that the query is addressing.
+A typical application is to query a domain object in a bounded context for its current value. More generally, the query driver can be used to execute any command within a list of configured commands for a given configured context.</description>
+    </item>
+    
+    <item>
+      <title>InjectSourcesAndSettings</title>
+      <link>http://brucou.github.io/projects/component-combinators/injectsourcesandsettings/</link>
+      <pubDate>Sat, 02 Sep 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/injectsourcesandsettings/</guid>
+      <description>Motivation The InjectSourcesAndSettings component allows to add BOTH sources and settings to an existing set of sources and settings. Those extra sources will be constructed from the existing sources and settings.
+Typically:
+ extra sources can be :  events (user clicks), behaviours (current content of database table), &amp;lsquo;reactive behaviours&amp;rsquo; (which are both events and behaviours - to use wisely1  always hold a current value pass on update events   extra settings can be :  trace information, to get a feeling of where in the component hierarchy a log points at parameters to be passed to all downstreams components  sinkNames is a common case  well anything really, dictated by the matter at hand, and representing a parameterization concern   The important point about sources and settings, for instance in InjectSourcesAndSettings (settings, [comp1, comp2])), is that they will be passed on to both components.</description>
+    </item>
+    
+    <item>
+      <title>InjectSources</title>
+      <link>http://brucou.github.io/projects/component-combinators/injectsources/</link>
+      <pubDate>Fri, 01 Sep 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/injectsources/</guid>
+      <description>Motivation The InjectSources component allows to add sources to an existing set of sources. Those extra sources will be constructed from the existing sources and parameterized by some settings.
+Typically, extra sources can be :
+ events (user clicks), behaviours (current content of database table), &amp;lsquo;reactive behaviours&amp;rsquo; (which are both events and behaviours)  always hold a current value pass on update events   It is important to understand well the semantics of those sources to create them in a safe and bug-free way.</description>
+    </item>
+    
+    <item>
+      <title>ListOf</title>
+      <link>http://brucou.github.io/projects/component-combinators/listof/</link>
+      <pubDate>Fri, 01 Sep 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/listof/</guid>
+      <description>Motivation The ListOf component allows to execute a single given template component for different values of a parameterizing input. Typically, the values come from an array, and a component is constructed from the execution, for each value of the array, of the given template component parameterized by that value.
+Practically speaking, this is akin to a for loop on an input array. While it is easy for a known array with a given length to execute that loop, the ListOf component abstract out managing cases where the array content or length is not known in advance.</description>
+    </item>
+    
+    <item>
+      <title>ForEach</title>
+      <link>http://brucou.github.io/projects/component-combinators/foreach/</link>
+      <pubDate>Tue, 29 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/foreach/</guid>
+      <description>Motivation The ForEach component allows to &amp;lsquo;execute&amp;rsquo; a component every time a source is emitting a value. It is hence similar to the Switch component in that a component is switched on and off for every incoming value on the source. ForEach semantics are similarly akin to those of flatMapLatest or switchMap but on a component instead of on a source.
+Practically speaking, given a component which is parameterized by a value, the ForEach component allows to account for the variability of that value outside of the component&amp;rsquo;s design.</description>
+    </item>
+    
+    <item>
+      <title>Router</title>
+      <link>http://brucou.github.io/projects/component-combinators/router/</link>
+      <pubDate>Wed, 16 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/router/</guid>
+      <description>Motivation The Router component allows to associate a set of URL locations (routes) from a source (called location source) to a component or set of components. When the location source emits a route, the component(s) associated to that route should be activated and be parameterized by the information encoded in the route.
+Routing involves a sophisticated form of control flow, and relates strongly to the Switch component. However, there are specifics to the routing logic, due to the fact that routing in web applications is principally aimed at representing efficiently, concisely, and visually a specific state of the application :</description>
+    </item>
+    
+    <item>
+      <title>Switch</title>
+      <link>http://brucou.github.io/projects/component-combinators/switch/</link>
+      <pubDate>Sat, 12 Aug 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/switch/</guid>
+      <description>Motivation The Switch component allows to associate a set of values from a source (called switch source) to a component. When the switch source emits the values associated to a given component, that component is activated (switched on). Components which are not associated to the emitted set of values are deactivated (switched off).
+The Switch component can be viewed as a single-state state machine, whose only event source is the switch source and event guards are the predicates specifying the component matching.</description>
+    </item>
+    
+    <item>
+      <title>Extended finite state machine</title>
+      <link>http://brucou.github.io/projects/component-combinators/efsm/</link>
+      <pubDate>Thu, 15 Jun 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/efsm/</guid>
+      <description>Introduction A web application&amp;rsquo;s user interface can be understood as a reactive system which displays a sequence of screens and perform a sequence of commands which are determined unequivocally by user actions, the application domain logic, and contextual data from the application&amp;rsquo;s environment (from miscellaneous databases, sensor inputs, etc.). We aim to show that, under some restrictive conditions, using a state machine to control that sequence, allow for better modelization, specification, testing and implementation of such user interface.</description>
+    </item>
+    
+    <item>
+      <title>runTestScenario</title>
+      <link>http://brucou.github.io/projects/component-combinators/runtestscenario/</link>
+      <pubDate>Thu, 15 Jun 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/runtestscenario/</guid>
+      <description>Table of content  Context Dependencies API  Key types runTestScenario Mocking Source factories Contracts  Example  Basic example Using ad-hoc mocks and factories  Known limitations Installation  npm Direct download Bower jspm  Troubleshooting Breaking Changes Roadmap License Contributing  Context There exists a number of ways to test functions which take a stream and return a stream (referred to, in what follows, as stream combinator). Most streaming libraries have at least some basic APIs to that purpose.</description>
+    </item>
+    
+    <item>
+      <title>m - the generic component combinator</title>
+      <link>http://brucou.github.io/projects/component-combinators/mm/</link>
+      <pubDate>Tue, 09 May 2017 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/projects/component-combinators/mm/</guid>
+      <description>The case for m, the component factory Componentization pursues three goals :
+ reuse - the most important factor of productivity gain separation of concerns - which fosters quality and maintainability using a limited number of operations and atomic components to build a large set of components - reducing complexity and increasing readability  At the core of this approach there is a combining function which takes a number of components and derives a new component, i.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Categories on Technuflexions</title>
+    <link>http://brucou.github.io/categories/</link>
+    <description>Recent content in Categories on Technuflexions</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2017 brucou</copyright>
+    
+	<atom:link href="http://brucou.github.io/categories/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Documentation</title>
+      <link>http://brucou.github.io/categories/documentation/</link>
+      <pubDate>Tue, 02 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/categories/documentation/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Lessons Learnt</title>
+      <link>http://brucou.github.io/categories/lessons-learnt/</link>
+      <pubDate>Tue, 09 May 2017 08:06:49 +0100</pubDate>
+      
+      <guid>http://brucou.github.io/categories/lessons-learnt/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Programming</title>
+      <link>http://brucou.github.io/categories/programming/</link>
+      <pubDate>Sun, 07 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>http://brucou.github.io/categories/programming/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

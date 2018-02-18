@@ -301,7 +301,7 @@ To compute the DOM view (in particular the task summary and the projects section
 
   - `projects`
   - `user`
-
+  
 As explained in the previous step, we have already injected those sources at the top level of 
 the application. This means that those sources will be available for every component under 
 `sources.user$`, and `sources.projects$`. We will then seek to write `SidePanel` as :

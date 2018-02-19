@@ -6,7 +6,8 @@
 		<meta name="generator" content="Hugo 0.31.1" />
 		<title>Combine - Technuflections</title>
 
-		<meta name="description" content="">
+		<meta name="description" content="Motivation The Combine combinator takes settings and components as parameters and produces a combined component whose behaviour is the sum, in a sense precised thereafter, of the behaviours of the components passed as parameters (we will refer to them as parameter components).
+The Combine combinator hence allows to build up components from smaller components. Each parameter component represents a behaviour which is described by Sources and Settings mapped to Sinks.">
 
 
 		
@@ -71,7 +72,7 @@
 			<a href="/tags/reactive%20programming">reactive programming</a>
 			
 			<a href="/tags/user%20interface">user interface</a>
-			0 min read
+			2 min read
 	</h5>
 	
 </hgroup>
@@ -79,6 +80,75 @@
 </header>
     <div class="post-content">
         
+
+<h1 id="motivation">Motivation</h1>
+
+<p>The <code>Combine</code> combinator takes settings and components as parameters and produces a combined
+component whose behaviour is the sum, in a sense precised thereafter, of the behaviours of the
+components passed as parameters (we will refer to them as parameter components).</p>
+
+<p>The <code>Combine</code> combinator hence allows to build up components from smaller components. Each
+parameter component represents a behaviour which is described by <code>Sources</code> and <code>Settings</code> mapped
+to <code>Sinks</code>. The <code>Combine</code> combinator takes each of the sinks produced by the parameter
+components, and combine them into the sinks for the combined component according to a mechanism
+described in a <a href="/projects/component-combinators/m-component---merge-default-functions/">dedicated article</a>.</p>
+
+<p>In short:</p>
+
+<ul>
+<li>all the parameter components&rsquo; non-DOM sinks of a given name are merged (<code>Rx.Observable.merge</code>) into a combined sink of the same name</li>
+<li>all the parameter components&rsquo; DOM sinks are merged according to a container and slot mechanism
+(the latter inspired from web-components specifications)
+
+<ul>
+<li><strong>container mechanism</strong> : the parameter components can be passed as an array of components (no
+container component), or in the form <code>[ContainerComponent, Array&lt;Component&gt;]</code>. When a
+container component is present, the DOM sinks&rsquo; <code>vNode</code> content of the other parameter components
+will be inserted <strong>within</strong> the <code>vNodes</code> of the container component &ndash; hence the name container
+component. All non-DOM sinks of the container component are merged as usual</li>
+<li><strong>slot mechanism</strong> : the container component has the possibility to refine the parameter
+components&rsquo; <code>vNode</code> insertion mechanism by defining slots to which <code>vNode</code>s can be distributed
+to. There are named slots and default slots for <code>vNode</code> content which do not belong to any named
+slots. There is also the possibility for all slots to have default content, in case no matching
+<code>vNode</code> is found in the parameter component&rsquo;s <code>vNode</code> content. That mechanism is pegged to the
+slot mechanism specified with web components. Hence most relevant documentation to the web
+component&rsquo;s slot mechanism apply to this library.</li>
+</ul></li>
+</ul>
+
+<p>Further details with examples can be found in a <a href="/projects/component-combinators/m-component---merge-default-functions/">dedicated article</a>.</p>
+
+<h1 id="api">API</h1>
+
+<h2 id="combine-settings-componenttree-combinedcomponent">Combine :: Settings -&gt; ComponentTree -&gt; CombinedComponent</h2>
+
+<h3 id="types">Types</h3>
+
+<p>Settings must be an object, and can be empty (<code>{}</code>).</p>
+
+<ul>
+<li><code>Settings :: *</code></li>
+<li><code>Component :: Sources -&gt; Settings -&gt; Sinks</code></li>
+<li><code>CombinedComponent :: Component</code></li>
+<li><code>ComponentTree :: ChildrenComponents | [ContainerComponent, ChildrenComponents]</code></li>
+<li><code>ContainerComponent:: Component</code></li>
+<li><code>ChildrenComponents :: Array&lt;Component&gt;</code></li>
+</ul>
+
+<h3 id="contracts">Contracts</h3>
+
+<ul>
+<li>there has to be at least one component passed as parameters, i.e. empty arrays for instance are
+not permitted</li>
+</ul>
+
+<h1 id="examples">Examples</h1>
+
+<p>Some examples for the <code>m</code> component factory are valid, as <code>Combine(settings, componentTree)</code> is
+just <code>m({}, settings, componentTree)</code>.</p>
+
+<h1 id="tips">Tips</h1>
+
     </div>
     <nav>
         
@@ -92,7 +162,21 @@
 <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">Contents</h2>
     <div class="post-toc-content">
-        
+        <nav id="TableOfContents">
+<ul>
+<li><a href="#motivation">Motivation</a></li>
+<li><a href="#api">API</a>
+<ul>
+<li><a href="#combine-settings-componenttree-combinedcomponent">Combine :: Settings -&gt; ComponentTree -&gt; CombinedComponent</a>
+<ul>
+<li><a href="#types">Types</a></li>
+<li><a href="#contracts">Contracts</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#tips">Tips</a></li>
+</ul>
+</nav>
     </div>
 </div>
 
